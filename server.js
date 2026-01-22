@@ -93,6 +93,31 @@ function handleMessage(ws, data) {
     }
 }
 
+        // 4. Client wants to proxy a request
+        case 'SEND_PROXY_CMD':
+            // Pick a random worker
+            const workerArray = Array.from(workers);
+            if (workerArray.length > 0) {
+                const randomWorker = workerArray[Math.floor(Math.random() * workerArray.length)];
+                
+                randomWorker.send(JSON.stringify({
+                    type: 'HTTP_PROXY',
+                    url: data.url,
+                    requestId: Date.now()
+                }));
+                console.log(`Routed proxy request for ${data.url}`);
+            }
+            break;
+
+        // 5. Worker returns the proxy result
+        case 'PROXY_RESULT':
+             // Forward result to ALL dashboards (simple broadcast)
+             clients.forEach(c => c.send(JSON.stringify({
+                 type: 'PROXY_LOG',
+                 data: data
+             })));
+             break;
+
 function sendJob(ws) {
     // If we already found the ticket, tell workers to stop/relax
     if (foundGoldenTicket) {
