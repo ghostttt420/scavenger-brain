@@ -2,19 +2,18 @@ const express = require('express');
 const { Server } = require('ws');
 const http = require('http');
 const cors = require('cors');
+const path = require('path'); // <--- THIS WAS MISSING!
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 3000;
 
 // --- STATE (The Brain's Memory) ---
-// In a real app, this would be a database. For now, RAM is fine.
 let tasks = []; 
 let results = [];
 let workers = new Set(); // Active Muscle (GitHub/Termux)
 let clients = new Set(); // Active Dashboards (You watching)
 
-// Generate dummy "Big Tasks" (e.g., numbers to check)
-// In reality, this could be millions of password hashes.
+// Generate dummy "Big Tasks" 
 for (let i = 0; i < 1000; i++) {
     tasks.push({ id: i, payload: `Chunk_${i}`, status: 'PENDING' });
 }
@@ -25,14 +24,14 @@ app.use(cors());
 const server = http.createServer(app);
 const wss = new Server({ server });
 
-// --- HTTP ENDPOINTS (For Vercel/Flash Mobs) ---
+// --- HTTP ENDPOINTS ---
 // Serve the Dashboard HTML
 app.get('/', (req, res) => {
+    // This requires the 'path' module we imported at the top
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-
-// --- WEBSOCKET LOGIC (For GitHub Muscle & Real-time Dashboard) ---
+// --- WEBSOCKET LOGIC ---
 wss.on('connection', (ws) => {
     console.log('New connection established');
 
@@ -49,15 +48,14 @@ wss.on('connection', (ws) => {
         workers.delete(ws);
         clients.delete(ws);
         console.log('Connection closed');
-        broadcastStats(); // Update dashboard
+        broadcastStats(); 
     });
 });
 
 // --- THE CORE LOGIC ---
 function handleMessage(ws, data) {
     switch (data.type) {
-        
-        // 1. A Worker (GitHub/Termux) joins and asks for work
+
         case 'REGISTER_WORKER':
             workers.add(ws);
             console.log('Worker joined!');
@@ -65,18 +63,21 @@ function handleMessage(ws, data) {
             broadcastStats();
             break;
 
-        // 2. A Dashboard (You) joins to watch
         case 'REGISTER_CLIENT':
             clients.add(ws);
-            ws.send(JSON.stringify({ type: 'STATS', tasksLeft: tasks.length, workers: workers.size, resultsCount: results.length }));
+            // FIXED: Calculate *pending* tasks so dashboard shows correct progress immediately
+            const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
+            ws.send(JSON.stringify({ 
+                type: 'STATS', 
+                tasksLeft: pendingCount, 
+                workers: workers.size, 
+                resultsCount: results.length 
+            }));
             break;
 
-        // 3. Worker finished a job!
         case 'TASK_COMPLETE':
             console.log(`Task ${data.taskId} complete! Result: ${data.result}`);
             results.push(data.result);
-            
-            // Give the worker a new task immediately
             sendTask(ws);
             broadcastStats();
             break;
@@ -84,11 +85,10 @@ function handleMessage(ws, data) {
 }
 
 function sendTask(ws) {
-    // Find a pending task
     const task = tasks.find(t => t.status === 'PENDING');
-    
+
     if (task) {
-        task.status = 'ASSIGNED'; // Lock it so others don't take it
+        task.status = 'ASSIGNED'; 
         ws.send(JSON.stringify({
             type: 'NEW_TASK',
             taskId: task.id,
@@ -106,7 +106,7 @@ function broadcastStats() {
         workers: workers.size,
         resultsCount: results.length
     });
-    
+
     clients.forEach(client => client.send(stats));
 }
 
@@ -114,4 +114,3 @@ function broadcastStats() {
 server.listen(PORT, () => {
     console.log(`Brain listening on port ${PORT}`);
 });
-
