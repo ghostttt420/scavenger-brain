@@ -143,4 +143,10 @@ function crack(ws, start, end, targetHash) {
     ws.send(JSON.stringify({ type: 'JOB_COMPLETE', solution: null }));
 }
 
+// --- HEARTBEAT PROTOCOL ---
+// Keeps the process alive and prevents GitHub timeout
+setInterval(() => {
+    console.log(`[HEARTBEAT] System Vitality: 100% | Uptime: ${process.uptime().toFixed(0)}s`);
+}, 60000); // Ping every 60 seconds
+
 connect();
