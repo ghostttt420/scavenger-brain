@@ -202,21 +202,24 @@
             };
         }
 
-        function updateDashboard(data) {
+              function updateDashboard(data) {
             document.getElementById('workers').innerText = data.workers;
-            document.getElementById('tasks').innerText = data.tasksLeft;
             
-            if(data.workers > 0) log(`Worker thread active. Processing chunk...`);
+            // Show Total Hashes instead of Tasks Left
+            document.getElementById('tasks').innerText = (data.totalHashes / 1000000).toFixed(2) + "M";
+            document.querySelector('.stat-label').innerText = "HASHES COMPUTED (M)"; // Change label
             
-            const total = 1000;
-            const done = total - data.tasksLeft;
-            const progress = (done / total) * 100;
+            if(data.workers > 0) log(`> Swarm computing... [${data.totalHashes} hashes]`);
             
-            document.getElementById('taskBar').style.width = progress + "%";
-            document.getElementById('percText').innerText = Math.round(progress) + "%";
-            
-            if(data.tasksLeft === 0) log("Batch process complete.");
+            if (data.goldenTicket) {
+                 document.getElementById('status').innerText = "SUCCESS: " + data.goldenTicket;
+                 document.getElementById('status').style.color = "#00ff41";
+                 document.getElementById('taskBar').style.width = "100%";
+                 document.getElementById('taskBar').style.backgroundColor = "gold";
+                 log("!!! GOLDEN TICKET RECOVERED: " + data.goldenTicket);
+            }
         }
+
 
         function log(msg) {
             const line = document.createElement('div');
