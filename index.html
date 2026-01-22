@@ -1,55 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SCAVENGER // CONTROL</title>
+    <title>SCAVENGER // MOBILE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #1a1a1a;
             --win-bg: #000000;
             --border-light: #555;
-            --border-dark: #000;
-            --header-bg: #000080; /* Classic Blue Header */
+            --header-bg: #000080;
             --header-text: #fff;
             --text-main: #e0e0e0;
-            --accent: #ffb000; /* Industrial Amber */
-            --alert: #ff3333;
+            --accent: #ffb000;
         }
 
         body { 
-            background-color: var(--bg-color); 
-            /* Subtle grid pattern background */
+            background-color: var(--bg-color);
             background-image: 
                 linear-gradient(var(--border-light) 1px, transparent 1px),
                 linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
             background-size: 20px 20px;
-            background-position: center center;
-            
-            font-family: 'VT323', monospace; /* The Unique Font */
-            font-size: 20px; /* VT323 needs to be big to look good */
-            margin: 0; padding: 15px; 
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            margin: 0; 
+            padding: 10px; 
             color: var(--text-main);
-            height: 100vh;
+            height: 100dvh; /* Mobile friendly height */
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
             overflow: hidden;
         }
 
-        /* --- THE WINDOW SYSTEM --- */
+        /* --- WINDOW SYSTEM --- */
         .win-frame {
             border: 2px solid var(--border-light);
             background: var(--win-bg);
-            box-shadow: 4px 4px 0px #000; /* Hard shadow */
+            box-shadow: 4px 4px 0px #000;
             display: flex;
             flex-direction: column;
+            min-height: 0; /* Important for flex scrolling */
         }
 
         .title-bar {
             background: var(--header-bg);
             color: var(--header-text);
-            padding: 2px 8px;
+            padding: 4px 8px;
             font-size: 22px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -57,131 +55,124 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid var(--border-light);
-        }
-        
-        .title-btn {
-            background: #c0c0c0;
-            color: black;
-            font-weight: bold;
-            width: 20px;
-            height: 20px;
-            text-align: center;
-            line-height: 18px;
-            font-family: sans-serif;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: inset 1px 1px #fff, inset -1px -1px #000;
+            flex-shrink: 0;
         }
 
         .win-content {
-            padding: 10px;
+            padding: 5px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             flex-grow: 1;
+            position: relative;
         }
 
-        /* --- LAYOUT GRID --- */
+        /* --- LAYOUT ADAPTATION --- */
         .top-deck {
-            display: grid;
-            grid-template-columns: 2fr 1fr; /* Logs take more space, Stats take less */
-            gap: 15px;
-            height: 60%; 
+            display: flex;
+            flex-direction: column; /* Stack vertically on mobile */
+            gap: 10px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+        
+        /* Desktop override: If screen is wide, go side-by-side */
+        @media (min-width: 768px) {
+            .top-deck {
+                flex-direction: row;
+            }
+            #win-logs { flex: 2; }
+            #win-stats { flex: 1; }
         }
 
-        /* --- AGENT TABLE --- */
-        table { width: 100%; border-collapse: collapse; }
+        /* Mobile specific sizing */
+        #win-logs { flex: 2; } /* Logs take 2/3 space */
+        #win-stats { flex: 1; } /* Stats take 1/3 space */
+
+        /* --- TABLES & STATS --- */
+        table { width: 100%; border-collapse: collapse; font-size: 18px; }
         th { text-align: left; border-bottom: 1px dashed var(--border-light); color: var(--accent); font-weight: normal; }
         td { padding: 2px 0; }
         .row-mining { color: #fff; }
-        .row-proxy { color: #d400ff; } /* Hot Purple */
+        .row-proxy { color: #d400ff; }
         .row-idle { color: #555; }
 
-        /* --- METRICS --- */
-        .big-stat {
-            font-size: 48px;
-            color: var(--accent);
-            line-height: 1;
+        .stat-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
         }
-        .stat-label { color: #888; text-transform: uppercase; }
+        .big-stat { font-size: 32px; color: var(--accent); line-height: 1; }
+        .stat-label { color: #888; font-size: 16px; }
 
         /* --- LOGS --- */
         #log-window {
             overflow-y: scroll;
             height: 100%;
-            padding-right: 5px;
             background: #050505;
+            font-size: 18px;
         }
-        .log-entry { 
-            margin-bottom: 2px; 
-            border-bottom: 1px solid #111;
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 10px; background: #1a1a1a; }
-        ::-webkit-scrollbar-thumb { background: var(--border-light); border: 1px solid #000; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #111; word-wrap: break-word; }
 
-        /* --- CMD INPUT --- */
+        /* --- INPUT --- */
         .cmd-frame {
             background: #000;
             border: 2px solid var(--border-light);
-            padding: 10px;
+            padding: 8px;
             display: flex;
             align-items: center;
             box-shadow: 4px 4px 0px #000;
+            flex-shrink: 0;
         }
         input {
             background: transparent;
             border: none;
             color: var(--accent);
             font-family: 'VT323', monospace;
-            font-size: 24px;
+            font-size: 22px;
             width: 100%;
             outline: none;
             text-transform: uppercase;
         }
-        input::placeholder { color: #333; }
-
     </style>
 </head>
 <body>
 
     <div class="top-deck">
         
-        <div class="win-frame">
+        <div class="win-frame" id="win-logs">
             <div class="title-bar">
-                <span>// SYSTEM_LOGS</span>
-                <div class="title-btn">X</div>
+                <span>// LOGS</span>
+                <span>X</span>
             </div>
             <div class="win-content">
                 <div id="log-window"></div>
             </div>
         </div>
 
-        <div class="win-frame">
+        <div class="win-frame" id="win-stats">
             <div class="title-bar">
-                <span>// SWARM_STATE</span>
-                <div class="title-btn">_</div>
+                <span>// GRID</span>
+                <span>_</span>
             </div>
-            <div class="win-content" style="gap: 20px;">
+            <div class="win-content">
                 
-                <div>
-                    <div class="stat-label">AGGREGATE HASHRATE</div>
-                    <div id="hashCount" class="big-stat">0.00</div>
-                    <div style="font-size:16px;">MH/s</div>
-                </div>
-
-                <div>
-                    <div class="stat-label">CURRENT JOB</div>
-                    <div style="border: 2px solid var(--border-light); height: 20px; margin-top: 5px; background: #111;">
-                        <div id="taskBar" style="width: 0%; height: 100%; background: var(--accent);"></div>
+                <div class="stat-grid">
+                    <div>
+                        <div class="stat-label">HASH/S</div>
+                        <div id="hashCount" class="big-stat">0.00</div>
                     </div>
-                    <div id="percText" style="text-align: right; color: var(--accent);">IDLE</div>
+                    <div>
+                        <div class="stat-label">STATUS</div>
+                        <div id="percText" style="color:var(--accent); font-size: 22px;">ACTIVE</div>
+                    </div>
                 </div>
 
-                <div style="flex-grow: 1; overflow-y: auto; border-top: 2px solid var(--border-light); padding-top: 5px;">
+                <div style="flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border-light);">
                     <table>
                         <thead>
-                            <tr><th>UNIT</th><th>IP</th><th>ACT</th></tr>
+                            <tr><th>ID</th><th>IP</th><th>ACT</th></tr>
                         </thead>
                         <tbody id="workerTable"></tbody>
                     </table>
@@ -192,8 +183,8 @@
     </div>
 
     <div class="cmd-frame">
-        <span style="color: var(--accent); margin-right: 10px;">ROOT@SCAVENGER:~#</span>
-        <input type="text" id="cmdInput" placeholder="AWAITING INSTRUCTION..." autocomplete="off">
+        <span style="color: var(--accent); margin-right: 5px;">></span>
+        <input type="text" id="cmdInput" placeholder="COMMAND..." autocomplete="off">
     </div>
 
     <script>
@@ -209,7 +200,7 @@
             }
             ws = new WebSocket(wsUrl + '?key=' + key);
             ws.onopen = () => { log("UPLINK SECURED.", "#0f0"); ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' })); };
-            ws.onclose = () => { log("SIGNAL LOST. RECONNECTING...", "#f00"); setTimeout(connect, 3000); };
+            ws.onclose = () => { log("SIGNAL LOST. RETRYING...", "#f00"); setTimeout(connect, 3000); };
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if(data.type === 'STATS') updateDashboard(data);
@@ -234,9 +225,8 @@
                 tbody.appendChild(row);
             });
             if (data.goldenTicket) {
-                document.getElementById('taskBar').style.width = "100%"; 
-                document.getElementById('taskBar').style.backgroundColor = "#0f0";
                 document.getElementById('percText').innerText = "CRACKED: " + data.goldenTicket;
+                document.getElementById('percText').style.color = "#0f0";
             }
         }
 
