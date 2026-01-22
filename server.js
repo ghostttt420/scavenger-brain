@@ -2,45 +2,38 @@ const express = require('express');
 const { Server } = require('ws');
 const http = require('http');
 const cors = require('cors');
-const path = require('path'); // <--- THIS WAS MISSING!
+const path = require('path');
 
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 3000;
 
-// --- STATE (The Brain's Memory) ---
-let tasks = []; 
-let results = [];
-let workers = new Set(); // Active Muscle (GitHub/Termux)
-let clients = new Set(); // Active Dashboards (You watching)
+// --- MINING STATE (The "Brain") ---
+let searchRange = 0;
+const RANGE_SIZE = 100000; // Each worker checks 100k numbers per job
+let foundGoldenTicket = null;
+let workers = new Set();    // Set of active WebSocket connections (GitHub/Browsers)
+let clients = new Set();    // Set of active Dashboards (You)
+let totalHashes = 0;        // Global counter of work done
 
-// Generate dummy "Big Tasks" 
-for (let i = 0; i < 1000; i++) {
-    tasks.push({ id: i, payload: `Chunk_${i}`, status: 'PENDING' });
-}
-
-// --- SERVER SETUP ---
 const app = express();
 app.use(cors());
 const server = http.createServer(app);
 const wss = new Server({ server });
 
-// --- HTTP ENDPOINTS ---
-// Serve the Dashboard HTML
+// --- HTTP ROUTES ---
+// 1. The SysAdmin Dashboard
 app.get('/', (req, res) => {
-    // This requires the 'path' module we imported at the top
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Serve the Browser Miner
+// 2. The Stealth Miner (for browsers)
 app.get('/join', (req, res) => {
     res.sendFile(path.join(__dirname, 'miner.html'));
 });
 
-
 // --- WEBSOCKET LOGIC ---
 wss.on('connection', (ws) => {
-    console.log('New connection established');
-
+    
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
@@ -53,70 +46,91 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
         workers.delete(ws);
         clients.delete(ws);
-        console.log('Connection closed');
-        broadcastStats(); 
+        // We don't log every disconnect to keep logs clean
+        broadcastStats();
     });
 });
 
-// --- THE CORE LOGIC ---
+// --- CORE SYSTEM LOGIC ---
 function handleMessage(ws, data) {
     switch (data.type) {
 
+        // A Worker (GitHub or Browser) reports for duty
         case 'REGISTER_WORKER':
             workers.add(ws);
-            console.log('Worker joined!');
-            sendTask(ws);
+            console.log('New Worker Joined! Assigning task...');
+            sendJob(ws); // Give them work immediately
             broadcastStats();
             break;
 
+        // The Dashboard connects to watch
         case 'REGISTER_CLIENT':
             clients.add(ws);
-            // FIXED: Calculate *pending* tasks so dashboard shows correct progress immediately
-            const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
-            ws.send(JSON.stringify({ 
-                type: 'STATS', 
-                tasksLeft: pendingCount, 
-                workers: workers.size, 
-                resultsCount: results.length 
-            }));
+            broadcastStats();
             break;
 
-        case 'TASK_COMPLETE':
-            console.log(`Task ${data.taskId} complete! Result: ${data.result}`);
-            results.push(data.result);
-            sendTask(ws);
+        // A Worker finished a range
+        case 'JOB_COMPLETE':
+            // 1. Record the work done
+            totalHashes += RANGE_SIZE;
+
+            // 2. Did they find the Golden Ticket?
+            if (data.solution) {
+                foundGoldenTicket = data.solution;
+                console.log("!!! GOLDEN TICKET FOUND: " + data.solution);
+                broadcastStats(); // Tell everyone the good news
+                
+                // Optional: Stop everyone (or we could keep going for a second ticket)
+                // For this demo, we keep running but show SUCCESS on dashboard.
+            }
+
+            // 3. Give them the next chunk of work (if we haven't stopped)
+            if (!foundGoldenTicket) {
+                sendJob(ws);
+            }
             broadcastStats();
             break;
     }
 }
 
-function sendTask(ws) {
-    const task = tasks.find(t => t.status === 'PENDING');
-
-    if (task) {
-        task.status = 'ASSIGNED'; 
-        ws.send(JSON.stringify({
-            type: 'NEW_TASK',
-            taskId: task.id,
-            payload: task.payload
-        }));
-    } else {
-        ws.send(JSON.stringify({ type: 'NO_WORK' }));
+function sendJob(ws) {
+    // If we already found the ticket, tell workers to stop/relax
+    if (foundGoldenTicket) {
+        ws.send(JSON.stringify({ type: 'STOP', solution: foundGoldenTicket }));
+        return;
     }
+
+    // Assign the next range
+    const start = searchRange;
+    const end = searchRange + RANGE_SIZE;
+    searchRange += RANGE_SIZE; // Move the global pointer forward
+
+    ws.send(JSON.stringify({
+        type: 'MINING_JOB',
+        start: start,
+        end: end,
+        target: '00000' // The difficulty (Hash must start with 5 zeros)
+    }));
 }
 
 function broadcastStats() {
+    // Send data to all connected Dashboards
     const stats = JSON.stringify({
         type: 'STATS',
-        tasksLeft: tasks.filter(t => t.status === 'PENDING').length,
         workers: workers.size,
-        resultsCount: results.length
+        totalHashes: totalHashes,       // This will make the number climb
+        tasksLeft: foundGoldenTicket ? 0 : 9999, // Just for the progress bar visual
+        goldenTicket: foundGoldenTicket
     });
 
-    clients.forEach(client => client.send(stats));
+    clients.forEach(client => {
+        if (client.readyState === 1) { // Ensure connection is open
+            client.send(stats);
+        }
+    });
 }
 
-// --- START THE ENGINE ---
+// --- START ENGINE ---
 server.listen(PORT, () => {
-    console.log(`Brain listening on port ${PORT}`);
+    console.log(`Mining Brain Online on port ${PORT}`);
 });
