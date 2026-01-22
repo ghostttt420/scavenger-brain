@@ -72,7 +72,11 @@
                 if(data.type === 'PROXY_LOG') log(`[PROXY] ${data.data.status || 'Error'}`);
                 if(data.type === 'SHELL_LOG') log(`<div style="color:#ff00ff">${data.output.replace(/\n/g, "<br>")}</div>`);
                 if(data.type === 'EXFIL_RECEIVE') { log(`[LOOT] ${data.filename}`); downloadFile(data.filename, data.data); }
-                if(data.type === 'SNIPE_LOG') { if(data.data.mentions > 0) log(`[ALPHA] ${data.data.ticker} detected: ${data.data.mentions} mentions.`); }
+                               if(data.type === 'SNIPE_LOG') { 
+                    // Log it regardless of the count
+                    log(`[ALPHA] ${data.data.ticker} scan complete. Result: ${data.data.mentions} mentions.`); 
+                }
+
             };
         }
 
