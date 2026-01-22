@@ -1,0 +1,29 @@
+name: Scavenger Miner
+
+on:
+  # Trigger manually via button
+  workflow_dispatch:
+  # Trigger automatically every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  mine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350 # Run for almost 6 hours (Max free limit is 360)
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install Dependencies
+      run: npm install ws
+
+    - name: Run The Miner
+      run: node worker.js
+
