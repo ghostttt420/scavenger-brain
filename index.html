@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SCAVENGER // NT WORKSTATION</title>
+    <style>
+        :root {
+            --bg-color: #004e5a; /* Classic Windows Teal Darkened */
+            --window-bg: #2d2d2d;
+            --text-color: #dcdcdc;
+            --bevel-light: #505050;
+            --bevel-dark: #1a1a1a;
+            --header-blue: #000080; /* Classic Title Bar Blue */
+        }
+        
+        body { 
+            background-color: var(--bg-color); 
+            font-family: 'Tahoma', 'MS Sans Serif', sans-serif; 
+            margin: 0; padding: 10px; 
+            color: var(--text-color);
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* UTILITY: Classic 3D Borders */
+        .win-border {
+            border-top: 2px solid var(--bevel-light);
+            border-left: 2px solid var(--bevel-light);
+            border-right: 2px solid var(--bevel-dark);
+            border-bottom: 2px solid var(--bevel-dark);
+            background: var(--window-bg);
+            padding: 2px;
+        }
+
+        .win-inset {
+            border-top: 2px solid var(--bevel-dark);
+            border-left: 2px solid var(--bevel-dark);
+            border-right: 2px solid var(--bevel-light);
+            border-bottom: 2px solid var(--bevel-light);
+            background: #000;
+        }
+
+        /* LAYOUT COMPONENTS */
+        .title-bar {
+            background: linear-gradient(90deg, #000080, #1084d0);
+            color: white;
+            padding: 4px 8px;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .window-content {
+            padding: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stat-label { font-size: 12px; color: #aaa; }
+        .stat-value { font-size: 24px; font-weight: bold; font-family: 'Courier New', monospace; }
+
+        /* LOGGING TERMINAL */
+        #log-window {
+            flex-grow: 1;
+            overflow-y: scroll;
+            padding: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .log-entry { margin-bottom: 2px; }
+        .timestamp { color: #888; margin-right: 8px; }
+
+        /* PROGRESS BAR */
+        .progress-container {
+            height: 18px;
+            background: #ccc;
+            border: 1px solid #000;
+            margin-top: 5px;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #000080;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0;
+            line-height: 18px;
+            color: white;
+            font-size: 11px;
+            text-shadow: 1px 1px 0 #000;
+            mix-blend-mode: difference;
+        }
+
+        /* BUTTONS */
+        button {
+            background: var(--window-bg);
+            border-top: 2px solid var(--bevel-light);
+            border-left: 2px solid var(--bevel-light);
+            border-right: 2px solid var(--bevel-dark);
+            border-bottom: 2px solid var(--bevel-dark);
+            color: white;
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+        button:active {
+            border-top: 2px solid var(--bevel-dark);
+            border-left: 2px solid var(--bevel-dark);
+            border-right: 2px solid var(--bevel-light);
+            border-bottom: 2px solid var(--bevel-light);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="win-border">
+        <div class="title-bar">
+            <span>System Monitor - PID: 4092</span>
+            <span>X</span>
+        </div>
+        <div class="window-content grid">
+            <div class="stat-box">
+                <span class="stat-label">Connected Workers</span>
+                <span id="workers" class="stat-value">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Queue Status</span>
+                <span id="tasks" class="stat-value">0</span>
+                <div class="progress-container">
+                    <div id="taskBar" class="progress-fill"></div>
+                    <div id="percText" class="progress-text">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="win-border" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <div class="title-bar">
+            <span>Event Log (C:\SYSTEM\LOGS)</span>
+            <div style="font-size: 10px;">v1.0</div>
+        </div>
+        <div class="window-content" style="flex-grow: 1; display: flex; flex-direction: column;">
+            <div id="log-window" class="win-inset">
+                </div>
+        </div>
+    </div>
+
+    <div class="win-border" style="padding: 5px; display: flex; justify-content: space-between; font-size: 12px;">
+        <span id="status">Ready</span>
+        <span>Mem: 4096K OK</span>
+    </div>
+
+    <script>
+        // AUTO-DETECT WSS URL
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = protocol + '//' + window.location.host;
+        
+        let ws;
+        const logDiv = document.getElementById('log-window');
+
+        function connect() {
+            log("Initializing winsock...");
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                document.getElementById('status').innerText = "Network: Online";
+                log("Connected to Mainframe.");
+                ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if(data.type === 'STATS') {
+                    updateDashboard(data);
+                }
+            };
+
+            ws.onclose = () => {
+                document.getElementById('status').innerText = "Network: Offline";
+                log("Connection lost. Retrying...");
+                setTimeout(connect, 3000);
+            };
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('workers').innerText = data.workers;
+            document.getElementById('tasks').innerText = data.tasksLeft;
+            
+            if(data.workers > 0) log(`Worker thread active. Processing chunk...`);
+            
+            const total = 1000;
+            const done = total - data.tasksLeft;
+            const progress = (done / total) * 100;
+            
+            document.getElementById('taskBar').style.width = progress + "%";
+            document.getElementById('percText').innerText = Math.round(progress) + "%";
+            
+            if(data.tasksLeft === 0) log("Batch process complete.");
+        }
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.className = 'log-entry';
+            line.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to bottom
+        }
+
+        connect();
+    </script>
+</body>
+</html>
