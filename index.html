@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SCAVENGER // NT WORKSTATION</title>
+    <title>SCAVENGER WORKSTATION</title>
     <style>
         :root {
             --bg-color: #004e5a; /* Classic Windows Teal Darkened */
@@ -171,6 +171,15 @@
     </div>
 
     <script>
+
+    <div class="win-border" style="margin-bottom: 10px; padding: 5px; background: #000;">
+        <div style="display: flex; align-items: center; color: #00ff41;">
+            <span style="margin-right: 10px;">ADMIN@HYDRA:~$</span>
+            <input type="text" id="cmdInput" placeholder="curl https://api.ipify.org" 
+                   style="background: transparent; border: none; color: white; font-family: 'Courier New'; width: 100%; outline: none;">
+        </div>
+    </div>
+
         // AUTO-DETECT WSS URL
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = protocol + '//' + window.location.host;
@@ -230,6 +239,32 @@
         }
 
         connect();
+
+        // Handle Command Input
+        document.getElementById('cmdInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const cmd = this.value;
+                if (cmd.startsWith('curl ')) {
+                    const url = cmd.split(' ')[1];
+                    log(`> Routing request to Swarm: ${url}`);
+                    ws.send(JSON.stringify({ type: 'SEND_PROXY_CMD', url: url }));
+                    this.value = '';
+                }
+            }
+        });
+
+        // Handle Proxy Logs
+        // Inside ws.onmessage... add this:
+        if (data.type === 'PROXY_LOG') {
+            const res = data.data;
+            if (res.error) {
+                log(`[ERROR] ${res.error}`);
+            } else {
+                log(`[${res.status}] Response from Node:`);
+                log(res.body); // Show the HTML/Text received
+            }
+        }
+
     </script>
 </body>
 </html>
