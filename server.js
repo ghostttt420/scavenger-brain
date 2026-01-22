@@ -131,7 +131,7 @@ function sendJob(ws) {
         type: 'MINING_JOB',
         start: start,
         end: end,
-        target: '00000' // The difficulty (Hash must start with 5 zeros)
+        target: '81dc9bdb52d04dc20036dbd8313ed055' // The difficulty (Hash must start with 5 zeros)
     }));
 }
 
