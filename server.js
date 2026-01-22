@@ -31,6 +31,12 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve the Browser Miner
+app.get('/join', (req, res) => {
+    res.sendFile(path.join(__dirname, 'miner.html'));
+});
+
+
 // --- WEBSOCKET LOGIC ---
 wss.on('connection', (ws) => {
     console.log('New connection established');
