@@ -1,60 +1,52 @@
 const WebSocket = require('ws');
+const crypto = require('crypto');
 
-// REPLACE THIS WITH YOUR RENDER URL! 
-// Example: 'wss://scavenger-brain-xyz.onrender.com'
+// REPLACE WITH YOUR URL!
 const WEBSOCKET_URL = 'wss://scavenger-brain.onrender.com'; 
 
 function connect() {
-    console.log('Attempting to connect to Brain...');
     const ws = new WebSocket(WEBSOCKET_URL);
 
-    ws.on('open', () => {
-        console.log('Connected! Reporting for duty.');
-        // Tell the brain we are a worker
-        ws.send(JSON.stringify({ type: 'REGISTER_WORKER' }));
-    });
+    ws.on('open', () => ws.send(JSON.stringify({ type: 'REGISTER_WORKER' })));
 
     ws.on('message', (data) => {
-        try {
-            const message = JSON.parse(data);
-            
-            if (message.type === 'NEW_TASK') {
-                console.log(`Received Task ${message.taskId}: ${message.payload}`);
-                performTask(ws, message.taskId);
-            }
-        } catch(e) {
-            console.error('Error parsing message:', e);
+        const msg = JSON.parse(data);
+        
+        if (msg.type === 'MINING_JOB') {
+            mine(ws, msg.start, msg.end, msg.target);
+        } else if (msg.type === 'STOP') {
+            console.log("!!! SYSTEM HALT. TICKET FOUND: " + msg.solution);
+            ws.close();
+            process.exit(0);
         }
     });
 
-    ws.on('close', () => {
-        console.log('Disconnected. Retrying in 5 seconds...');
-        setTimeout(connect, 5000);
-    });
-
-    ws.on('error', (err) => {
-        console.error('Socket error:', err.message);
-        ws.close();
-    });
+    ws.on('close', () => setTimeout(connect, 5000));
+    ws.on('error', () => ws.close());
 }
 
-function performTask(ws, taskId) {
-    // SIMULATE HEAVY WORK
-    // In reality, this is where we crack passwords or mine hash
-    console.log('Crunching numbers...');
+function mine(ws, start, end, targetPrefix) {
+    console.log(`Mining range: ${start} - ${end}`);
     
-    // Simulate 2 seconds of work
-    setTimeout(() => {
-        const result = `Processed_${taskId}_by_GitHub`;
-        
-        ws.send(JSON.stringify({
-            type: 'TASK_COMPLETE',
-            taskId: taskId,
-            result: result
-        }));
-        console.log('Task finished and sent.');
-    }, 2000); 
+    // THE HEAVY LOOP
+    for (let i = start; i < end; i++) {
+        // We are hashing the string "scavenger" + number
+        const input = "scavenger" + i; 
+        const hash = crypto.createHash('sha256').update(input).digest('hex');
+
+        if (hash.startsWith(targetPrefix)) {
+            console.log("FOUND IT! " + input);
+            ws.send(JSON.stringify({
+                type: 'JOB_COMPLETE',
+                solution: input, 
+                hash: hash
+            }));
+            return;
+        }
+    }
+
+    // Finished range, nothing found
+    ws.send(JSON.stringify({ type: 'JOB_COMPLETE', solution: null }));
 }
 
-// Start the engine
 connect();
