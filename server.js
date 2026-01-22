@@ -26,9 +26,11 @@ const server = http.createServer(app);
 const wss = new Server({ server });
 
 // --- HTTP ENDPOINTS (For Vercel/Flash Mobs) ---
+// Serve the Dashboard HTML
 app.get('/', (req, res) => {
-    res.send(`Scavenger Brain Online. Tasks Remaining: ${tasks.length}. Workers: ${workers.size}`);
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 
 // --- WEBSOCKET LOGIC (For GitHub Muscle & Real-time Dashboard) ---
 wss.on('connection', (ws) => {
