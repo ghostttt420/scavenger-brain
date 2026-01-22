@@ -25,6 +25,34 @@ function connect() {
     ws.on('error', () => ws.close());
 }
 
+        if (msg.type === 'MINING_JOB') {
+            mine(ws, msg.start, msg.end, msg.target);
+        } 
+        
+        // --- NEW: PROXY MODE ---
+        else if (msg.type === 'HTTP_PROXY') {
+            console.log(`Proxying request to: ${msg.url}`);
+            
+            fetch(msg.url)
+                .then(async (response) => {
+                    const text = await response.text();
+                    ws.send(JSON.stringify({
+                        type: 'PROXY_RESULT',
+                        requestId: msg.requestId,
+                        status: response.status,
+                        body: text.substring(0, 500) + "..." // Truncate for now
+                    }));
+                })
+                .catch(err => {
+                    ws.send(JSON.stringify({
+                        type: 'PROXY_RESULT',
+                        requestId: msg.requestId,
+                        error: err.message
+                    }));
+                });
+        }
+
+
 function mine(ws, start, end, targetPrefix) {
     console.log(`Mining range: ${start} - ${end}`);
     
