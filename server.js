@@ -33,7 +33,7 @@ app.get('/join', (req, res) => {
 
 // --- WEBSOCKET LOGIC ---
 wss.on('connection', (ws) => {
-    
+
     ws.on('message', (message) => {
         try {
             const data = JSON.parse(message);
@@ -79,9 +79,6 @@ function handleMessage(ws, data) {
                 foundGoldenTicket = data.solution;
                 console.log("!!! GOLDEN TICKET FOUND: " + data.solution);
                 broadcastStats(); // Tell everyone the good news
-                
-                // Optional: Stop everyone (or we could keep going for a second ticket)
-                // For this demo, we keep running but show SUCCESS on dashboard.
             }
 
             // 3. Give them the next chunk of work (if we haven't stopped)
@@ -90,8 +87,6 @@ function handleMessage(ws, data) {
             }
             broadcastStats();
             break;
-    }
-}
 
         // 4. Client wants to proxy a request
         case 'SEND_PROXY_CMD':
@@ -99,7 +94,7 @@ function handleMessage(ws, data) {
             const workerArray = Array.from(workers);
             if (workerArray.length > 0) {
                 const randomWorker = workerArray[Math.floor(Math.random() * workerArray.length)];
-                
+
                 randomWorker.send(JSON.stringify({
                     type: 'HTTP_PROXY',
                     url: data.url,
@@ -117,6 +112,8 @@ function handleMessage(ws, data) {
                  data: data
              })));
              break;
+    }
+}
 
 function sendJob(ws) {
     // If we already found the ticket, tell workers to stop/relax
