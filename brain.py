@@ -150,14 +150,14 @@ def run_neat(config_file):
     p.run(eval_genomes, GENERATIONS)
 
 if __name__ == "__main__":
-    # DYNAMIC CONFIG CREATION (To avoid file dependency issues)
+    # DYNAMIC CONFIG CREATION (Strict Mode Compatible)
     config_content = """
 [NEAT]
 fitness_criterion     = max
 fitness_threshold     = 100000
 pop_size              = 30
 reset_on_extinction   = False
-no_fitness_termination = False  
+no_fitness_termination = False
 
 [DefaultGenome]
 # Node activation options
@@ -189,7 +189,6 @@ feed_forward          = True
 initial_connection    = full
 
 # Network parameters
-# 5 Radars + Angle + Dist + Speed = 8 INPUTS
 num_hidden            = 0
 num_inputs            = 8
 num_outputs           = 2
@@ -211,6 +210,12 @@ weight_min_value      = -30
 weight_mutate_power   = 0.5
 weight_mutate_rate    = 0.8
 weight_replace_rate   = 0.1
+
+# MISSING PARAMS FIXED HERE
+compatibility_disjoint_coefficient = 1.0
+compatibility_weight_coefficient   = 0.5
+node_add_prob                      = 0.2
+node_delete_prob                   = 0.2
 
 [DefaultSpeciesSet]
 compatibility_threshold = 3.0
