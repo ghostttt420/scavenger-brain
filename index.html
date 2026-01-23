@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SCAVENGER </title>
+    <title>SCAVENGER // GHOST_NET</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/favicon.png">
 
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* --- THEME CONFIG: GHOST BLUE --- */
+            /* --- THEME CONFIG: GHOST BLUE (Matches your Logo) --- */
             --bg-color: #050a10;       /* Deepest Navy/Black */
             --win-bg: #000000;
             --border-light: #005f73;   /* Muted Cyan/Teal Border */
             --header-bg: #002244;      /* Navy Header */
             --header-text: #e0f7fa;    /* Ice White Text */
             --text-main: #b3e5fc;      /* Pale Blue Text */
-            --accent: #00e5ff;         /* ELECTRIC CYAN (Matches Favicon) */
-            
+            --accent: #00e5ff;         /* ELECTRIC CYAN */
+
             /* Status Colors */
             --alert: #ff3333;          /* Red */
             --success: #00ff41;        /* Green */
@@ -62,26 +65,26 @@
         }
 
         .win-content { padding: 5px; overflow: hidden; display: flex; flex-direction: column; flex-grow: 1; position: relative; }
-        
+
         .top-deck { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow: hidden; }
         @media (min-width: 768px) { .top-deck { flex-direction: row; } #win-logs { flex: 2; } #win-stats { flex: 1; } }
         #win-logs { flex: 2; } #win-stats { flex: 1; }
-        
+
         table { width: 100%; border-collapse: collapse; font-size: 18px; }
         th { text-align: left; border-bottom: 1px dashed var(--border-light); color: var(--accent); font-weight: normal; }
         td { padding: 2px 0; }
-        
+
         .row-mining { color: #fff; } 
         .row-proxy { color: #d400ff; } 
         .row-idle { color: #555; }
-        
+
         .stat-grid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .big-stat { font-size: 32px; color: var(--accent); line-height: 1; text-shadow: 0 0 8px rgba(0, 229, 255, 0.4); }
         .stat-label { color: #578aab; font-size: 16px; }
-        
+
         #log-window { overflow-y: scroll; height: 100%; background: #020408; font-size: 18px; }
         .log-entry { margin-bottom: 4px; border-bottom: 1px solid #0a1f33; word-wrap: break-word; }
-        
+
         .cmd-frame { 
             background: #000; 
             border: 2px solid var(--border-light); 
@@ -90,7 +93,7 @@
             box-shadow: 4px 4px 0px #001122; 
             flex-shrink: 0; 
         }
-        
+
         input { 
             background: transparent; 
             border: none; 
@@ -184,6 +187,12 @@
                 else if (cmd.startsWith('scan ')) ws.send(JSON.stringify({ type: 'SEND_SCAN_CMD', ip: cmd.split(' ')[1] }));
                 else if (cmd.startsWith('archive ')) ws.send(JSON.stringify({ type: 'SEND_ARCHIVE_CMD', url: cmd.split(' ')[1] }));
                 else if (cmd.startsWith('spider ')) ws.send(JSON.stringify({ type: 'SEND_SPIDER_SCOUT', url: cmd.split(' ')[1] }));
+                
+                // --- THE FIX: STUDIO COMMAND ADDED HERE ---
+                else if (cmd.startsWith('studio')) {
+                    log(`> [STUDIO] LIGHTS. CAMERA. ACTION.`, "#00e5ff");
+                    ws.send(JSON.stringify({ type: 'SEND_STUDIO_CMD' }));
+                }
             }
         });
 
@@ -200,7 +209,7 @@
         function logHTML(html) { log(html.replace(/\n/g, "<br>")); }
         function handleMapLog(res) { log(`[MAP] ${res.status} > /${res.path}`, res.status === 200 ? "#00ff41" : "#d400ff"); }
         function handleScanLog(res) { log(`[HYDRA] PORT ${res.port} OPEN ON ${res.ip}`, "#ff3333"); }
-        
+
         function handleSpiderScout(data) {
             const links = data.links;
             log(`[SPIDER] Scout found ${links.length} links. Deploying Swarm...`, "#00e5ff");
