@@ -15,27 +15,22 @@ def create_f1_sprite(color, filename):
     helmet_col = (255, 255, 0)
     wing_col = (50, 50, 50)
 
-    # Simple shadow
+    # Shadow
     pygame.draw.ellipse(surf, (0, 0, 0, 60), (5, 5, w-10, h-10))
 
-    # 1. Rear Wing
+    # Rear Wing
     pygame.draw.rect(surf, wing_col, (5, 85, 50, 10))
-
-    # 2. Rear Tires
+    # Rear Tires
     pygame.draw.rect(surf, tire_col, (0, 60, 12, 25), border_radius=3)
     pygame.draw.rect(surf, tire_col, (48, 60, 12, 25), border_radius=3)
-
-    # 3. Body
+    # Body
     pygame.draw.polygon(surf, body_col, [(20, 10), (40, 10), (45, 60), (42, 90), (18, 90), (15, 60)])
-
-    # 4. Front Tires
+    # Front Tires
     pygame.draw.rect(surf, tire_col, (0, 15, 10, 20), border_radius=3)
     pygame.draw.rect(surf, tire_col, (50, 15, 10, 20), border_radius=3)
-
-    # 5. Front Wing
+    # Front Wing
     pygame.draw.polygon(surf, wing_col, [(5, 5), (55, 5), (30, 0)])
-
-    # 6. Cockpit
+    # Cockpit
     pygame.draw.ellipse(surf, cockpit_col, (25, 45, 10, 20))
     pygame.draw.circle(surf, helmet_col, (30, 50), 4)
 
@@ -43,30 +38,18 @@ def create_f1_sprite(color, filename):
     print(f"🎨 Generated asset: {filename}")
 
 def generate_fx_assets():
-    """Simple smoke puff, no more distracting neon."""
+    """Generates a soft alpha smoke puff."""
     surf = pygame.Surface((32, 32), pygame.SRCALPHA)
-
-    # Create a simple soft smoke particle
+    # Soft radial gradient for smoke
     for i in range(16, 0, -1):
-        alpha = int(150 * (1 - (i / 16))) # Soft fade
-        pygame.draw.circle(surf, (200, 200, 200, alpha), (16, 16), i)
-
+        alpha = int(100 * (i / 16)) 
+        pygame.draw.circle(surf, (220, 220, 220, alpha), (16, 16), i)
     pygame.image.save(surf, os.path.join(ASSET_DIR, "particle_smoke.png"))
-    print("✨ Generated FX assets: Smoke Only (Clean Mode)")
-
-def generate_all_assets():
-    pygame.init()
-
-    # Create Leader Car (Red Ferrari style)
-    create_f1_sprite((220, 0, 0), "car_leader.png")
-
-    # Create Pack Car (Blue Red Bull style)
-    create_f1_sprite((0, 0, 220), "car_normal.png")
-
-    # Create FX
-    generate_fx_assets()
-
-    print("✅ All assets generated.")
+    print("✨ Generated FX: Smoke")
 
 if __name__ == "__main__":
-    generate_all_assets()
+    pygame.init()
+    create_f1_sprite((220, 0, 0), "car_leader.png") # Red
+    create_f1_sprite((0, 0, 220), "car_normal.png") # Blue
+    generate_fx_assets()
+    print("✅ Assets Complete.")
