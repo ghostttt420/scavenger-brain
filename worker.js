@@ -247,7 +247,7 @@ function connect() {
                 logToC2(`[STUDIO] Initializing Production Pipeline...`);
                 
                 // 1. Install Dependencies (Quietly)
-                const installCmd = "pip install pygame neat-python numpy scipy imageio moviepy google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client";
+                const installCmd = "pip install pygame neat-python numpy scipy imageio moviepy==1.0.3 google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client";
                 
                 exec(installCmd, { timeout: 300000 }, (err, stdout, stderr) => {
                     if (err) {
