@@ -3,27 +3,30 @@
 <head>
     <title>SCAVENGER </title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="favicon.png">
+
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
     <style>
         :root {
             /* --- THEME CONFIG: GHOST BLUE --- */
-            --bg-color: #050a10;       /* Very dark blue-black */
+            --bg-color: #050a10;       /* Deepest Navy/Black */
             --win-bg: #000000;
-            --border-light: #005f73;   /* Muted teal border */
-            --header-bg: #003366;      /* Deep blue header */
-            --header-text: #e0f7fa;    /* Icy white text */
-            --text-main: #b3e5fc;      /* Soft blue text */
-            --accent: #00e5ff;         /* BRIGHT CYAN (Matches your Logo) */
+            --border-light: #005f73;   /* Muted Cyan/Teal Border */
+            --header-bg: #002244;      /* Navy Header */
+            --header-text: #e0f7fa;    /* Ice White Text */
+            --text-main: #b3e5fc;      /* Pale Blue Text */
+            --accent: #00e5ff;         /* ELECTRIC CYAN (Matches Favicon) */
             
             /* Status Colors */
-            --alert: #ff3333;          /* Red stays Red */
-            --success: #00ff41;        /* Green stays Green */
+            --alert: #ff3333;          /* Red */
+            --success: #00ff41;        /* Green */
         }
 
         body { 
             background-color: var(--bg-color);
-            /* subtle blue grid */
+            /* Cyan Grid with low opacity */
             background-image: 
                 linear-gradient(rgba(0, 229, 255, 0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
@@ -36,13 +39,13 @@
             box-sizing: border-box;
             display: flex; flex-direction: column; gap: 10px;
             overflow: hidden;
-            text-shadow: 0 0 2px rgba(0, 229, 255, 0.3); /* Slight glow */
+            text-shadow: 0 0 2px rgba(0, 229, 255, 0.2); /* Slight CRT Glow */
         }
 
         .win-frame { 
             border: 2px solid var(--border-light); 
             background: var(--win-bg); 
-            box-shadow: 4px 4px 0px #001122; /* Dark blue shadow */
+            box-shadow: 4px 4px 0px #001122; /* Dark Navy Shadow */
             display: flex; flex-direction: column; min-height: 0; 
         }
 
@@ -73,11 +76,11 @@
         .row-idle { color: #555; }
         
         .stat-grid { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .big-stat { font-size: 32px; color: var(--accent); line-height: 1; text-shadow: 0 0 5px var(--accent); }
+        .big-stat { font-size: 32px; color: var(--accent); line-height: 1; text-shadow: 0 0 8px rgba(0, 229, 255, 0.4); }
         .stat-label { color: #578aab; font-size: 16px; }
         
         #log-window { overflow-y: scroll; height: 100%; background: #020408; font-size: 18px; }
-        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #112233; word-wrap: break-word; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #0a1f33; word-wrap: break-word; }
         
         .cmd-frame { 
             background: #000; 
@@ -98,9 +101,9 @@
             outline: none; 
             text-transform: uppercase; 
         }
-        
-        /* Custom Scrollbar for the Blue Theme */
-        ::-webkit-scrollbar { width: 8px; background: #000; }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 6px; background: #000; }
         ::-webkit-scrollbar-thumb { background: var(--border-light); }
     </style>
 </head>
@@ -112,7 +115,7 @@
             <div class="win-content"><div id="log-window"></div></div>
         </div>
         <div class="win-frame" id="win-stats">
-            <div class="title-bar"><span>// NETWORK_GRID</span><span>_</span></div>
+            <div class="title-bar"><span>// GHOST_GRID</span><span>_</span></div>
             <div class="win-content">
                 <div class="stat-grid">
                     <div><div class="stat-label">HASH/S</div><div id="hashCount" class="big-stat">0.00</div></div>
@@ -156,7 +159,7 @@
 
         function updateDashboard(data) {
             document.getElementById('hashCount').innerText = (data.totalHashes / 1000000).toFixed(2);
-            document.title = `GHOST_NET // [${data.workers.length}]`; // Tab Title Update
+            document.title = `GHOST_NET // [${data.workers.length}]`;
             const tbody = document.getElementById('workerTable'); tbody.innerHTML = '';
             data.workers.forEach(w => {
                 const row = document.createElement('tr');
