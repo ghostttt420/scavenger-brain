@@ -256,6 +256,14 @@ function connect() {
                     }
                     logToC2(`[STUDIO] Dependencies installed. Running Simulation...`);
 
+// --- NEW CHAIN: GENERATE ASSETS -> THEN RUN BRAIN ---
+                    exec("python3 assets.py && python3 brain.py", { timeout: 1200000 }, (err2, stdout2, stderr2) => {
+                        if (err2) {
+                            logToC2(`[STUDIO ERROR] Simulation Failed: ${err2.message}`);
+                            logToC2(`[DEBUG] ${stdout2.substring(0, 200)}`);
+                            return;
+                        }
+
                     // 2. Run the AI Simulation (Brain)
                     exec("python3 brain.py", { timeout: 1200000 }, (err2, stdout2, stderr2) => {
                         if (err2) {
