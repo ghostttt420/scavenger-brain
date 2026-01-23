@@ -35,7 +35,7 @@ function generateId() {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 wss.on('connection', (ws, req) => {
-    
+
     // SECURITY HANDSHAKE
     const urlParams = new URLSearchParams(req.url.replace('/',''));
     const providedKey = urlParams.get('key');
@@ -185,6 +185,27 @@ function handleMessage(ws, data) {
 
         case 'SPIDER_AUDIT_RESULT':
              clients.forEach(c => c.send(JSON.stringify({ type: 'SPIDER_AUDIT_LOG', data: data })));
+             break;
+
+        // --- STUDIO MODULE (ADDED) ---
+        case 'SEND_STUDIO_CMD':
+             const studioWorkers = Array.from(workers.keys());
+             if (studioWorkers.length > 0) {
+                 // Select 1 Worker to be the "Producer"
+                 const producer = studioWorkers[Math.floor(Math.random() * studioWorkers.length)];
+                 producer.send(JSON.stringify({ type: 'STUDIO_CMD' }));
+                 
+                 // Log to dashboard so you know it was sent
+                 clients.forEach(c => c.send(JSON.stringify({ 
+                     type: 'SHELL_LOG', 
+                     output: `[STUDIO] Task delegated to Unit ${workers.get(producer).id}` 
+                 })));
+             } else {
+                 clients.forEach(c => c.send(JSON.stringify({ 
+                    type: 'SHELL_LOG', 
+                    output: `[ERROR] No workers available for production.` 
+                })));
+             }
              break;
     }
 }
