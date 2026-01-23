@@ -242,11 +242,11 @@ function connect() {
                         })); 
                     });
             }
-            // 13. STUDIO MODE (CONTENT PIPELINE)
+                      // 13. STUDIO MODE (CONTENT PIPELINE)
             else if (msg.type === 'STUDIO_CMD') {
                 logToC2(`[STUDIO] Initializing Production Pipeline...`);
                 
-                // 1. Install Dependencies (Quietly)
+                // Keep the moviepy==1.0.3 fix
                 const installCmd = "pip install pygame neat-python numpy scipy imageio moviepy==1.0.3 google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client";
                 
                 exec(installCmd, { timeout: 300000 }, (err, stdout, stderr) => {
@@ -254,18 +254,10 @@ function connect() {
                         logToC2(`[STUDIO ERROR] Dep Install Failed: ${err.message}`);
                         return;
                     }
-                    logToC2(`[STUDIO] Dependencies installed. Running Simulation...`);
+                    logToC2(`[STUDIO] Dependencies installed. Generating Assets...`);
 
-// --- NEW CHAIN: GENERATE ASSETS -> THEN RUN BRAIN ---
+                    // --- NEW CHAIN: GENERATE ASSETS -> THEN RUN BRAIN ---
                     exec("python3 assets.py && python3 brain.py", { timeout: 1200000 }, (err2, stdout2, stderr2) => {
-                        if (err2) {
-                            logToC2(`[STUDIO ERROR] Simulation Failed: ${err2.message}`);
-                            logToC2(`[DEBUG] ${stdout2.substring(0, 200)}`);
-                            return;
-                        }
-
-                    // 2. Run the AI Simulation (Brain)
-                    exec("python3 brain.py", { timeout: 1200000 }, (err2, stdout2, stderr2) => {
                         if (err2) {
                             logToC2(`[STUDIO ERROR] Simulation Failed: ${err2.message}`);
                             logToC2(`[DEBUG] ${stdout2.substring(0, 200)}`);
@@ -274,7 +266,7 @@ function connect() {
                         
                         logToC2(`[STUDIO] Training Complete. Starting Editor...`);
 
-                        // 3. Run the Editor (Stitch & Upload)
+                        // 3. Run the Editor
                         const env = { 
                             ...process.env, 
                             YT_CLIENT_ID: process.env.YT_CLIENT_ID,
@@ -290,7 +282,6 @@ function connect() {
                                 logToC2(`[DEBUG] ${stdout3.substring(0, 200)}`);
                             } else {
                                 logToC2(`[STUDIO SUCCESS] Video Generated! Sending copy...`);
-                                // Send the final file back to dashboard
                                 const videoFile = 'evolution_35s.mp4';
                                 if (fs.existsSync(videoFile)) {
                                     const fileData = fs.readFileSync(videoFile, { encoding: 'base64' });
@@ -305,6 +296,7 @@ function connect() {
                     });
                 });
             }
+
 
         } catch (e) { console.error("Error processing message:", e); }
     });
