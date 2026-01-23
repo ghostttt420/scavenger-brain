@@ -79,9 +79,6 @@ def run_simulation(genomes, config):
                 if car.check_gates(checkpoints):
                     ge[i].fitness += 50 
                 
-                # Punishment: Spinning in circles (Angle diff too high)
-                # if abs(input_data[0]) > 0.8: ge[i].fitness -= 1
-
                 if car.distance_traveled > max_dist:
                     max_dist = car.distance_traveled
                     best_car = car
@@ -160,6 +157,7 @@ fitness_criterion     = max
 fitness_threshold     = 100000
 pop_size              = 30
 reset_on_extinction   = False
+no_fitness_termination = False  
 
 [DefaultGenome]
 # Node activation options
