@@ -162,7 +162,7 @@
 
         function updateDashboard(data) {
             document.getElementById('hashCount').innerText = (data.totalHashes / 1000000).toFixed(2);
-            document.title = `GHOST_NET // [${data.workers.length}]`;
+            document.title = `SCAVENGER [${data.workers.length}]`;
             const tbody = document.getElementById('workerTable'); tbody.innerHTML = '';
             data.workers.forEach(w => {
                 const row = document.createElement('tr');
