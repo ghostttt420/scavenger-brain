@@ -24,6 +24,7 @@ let foundGoldenTicket = null;
 
 const app = express();
 app.use(cors());
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
 const server = http.createServer(app);
 const wss = new Server({ server });
 
